@@ -3,7 +3,7 @@
 
 
 #Function to load csv files that contain 14C data
-read_csv_14Cfun <- function(path, pattern = "*.csv"){
+read_csv_14C_fun <- function(path, pattern = "*.csv"){
   list.files(path, pattern, full.names = TRUE) %>% 
     map_df(~read_csv(.))
     
