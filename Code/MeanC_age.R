@@ -57,6 +57,7 @@ curve_list <- list(
 
 # Define model parameters
 model_par <- data.frame(
+  #Use smaller number for testing
   TT = seq_len(6500), # possible turnover times to search for matching 14C values
   In = 100) %>% # arbitrary C input value since system is assumed to be in steady state
   mutate(k = 1/TT, # decomposition rate: 1/turn over time in 1/yr
@@ -88,6 +89,7 @@ opm_fun <- function(x){
 }
 
 # create list that contains model results (14C) for each atmospheric zone
+# takes a lot time to create list > 20min
 opm_2009_list <- map(feat, ~opm_fun(.x))
 
 # function to create list that contains a data.frame for each zone with 14C and TT
@@ -113,7 +115,7 @@ max_ind[[1]]
 
 ##STOPPED HERE
 
-
+#Make figures that compare measured and modelled 14C values
   
 
 ## Extract TT where difference between modelled and measured 14C is smallest
