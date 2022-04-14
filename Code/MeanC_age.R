@@ -32,12 +32,18 @@ zones_14C <- function(x){
   x %>% 
     mutate(Zones = case_when(
       Latitude > 0 ~ "NHZone3",
-      Latitude < 0 & Latitude -15 ~ "SHZone12",
+      Latitude < 0 & Latitude > -15 ~ "SHZone12",
       Latitude < -15 ~ "SHZone3"
     ))
 }
 
 df_14c_zones <- zones_14C(df_14c)
+
+#Check Zones
+df_14c_zones %>% 
+  group_by(Zones) %>% 
+  count()
+
 
 # Define 14C atmosphere curves for different zones
 curve_list <- list(
@@ -56,22 +62,15 @@ model_par <- data.frame(
   mutate(k = 1/TT, # decomposition rate: 1/turn over time in 1/yr
          F0 = k/(k+(1/8267)), # fraction modern in the soil under steady state conditions
          DeltaF0 = (F0-1)*100, # calculate delta14C from fraction modern
-         C0 = In * TT) # carbon stock in th soil; Cstock = Input/k
+         C0 = In * TT) # carbon stock in the soil; Cstock = Input/k
 
 # Run one pool model for each possible turnover and for the three different zones
 # k - column 3, C0 - column 6, DeltaF0 - column 5, In -column 2
+
+
+#Function to run model for each atmospheric zone (n = 3)
 feat <- names(curve_list)
 
-#Working
-one_pool_model <- function(x){
-  model_par %>% 
-  pmap(~OnepModel14(t = seq(1901,2009, by = 0.5),
-                    k =  ..3, C0 = ..6,
-                    F0_Delta14C = ..5, 
-                    In =..2, inputFc = curve_list[[x]]))
-}
-
-#not really tested; change assignment: use variable names instead of column number?!
 one_pool_model <- function(x){
   pmap(model_par, ~OnepModel14(t = seq(1901,2009, by = 0.5),
                                k =  ..3, C0 = ..6,
@@ -79,40 +78,68 @@ one_pool_model <- function(x){
                                In =..2, inputFc = curve_list[[x]]))
 }
 
-#not tested
-one_pool_model <- function(x){
-  pmap(model_par, ~getF14(OnepModel14(t = seq(1901,2009, by = 0.5),
-                                      k =  ..3, C0 = ..6,
-                                      F0_Delta14C = ..5, 
-                                      In =..2, inputFc = curve_list[[x]])))
+# function to apply model and extract values for target year (2009) by zone
+opm_fun <- function(x){
+  opm <- map(feat, ~one_pool_model(.x))
+  names(opm) <- feat
+  opm_2009 <- opm[[x]] %>% 
+    map(getF14) %>% 
+    map(217)
 }
 
+# create list that contains model results (14C) for each atmospheric zone
+opm_2009_list <- map(feat, ~opm_fun(.x))
 
-# Try not to store opm because it is so large
+# function to create list that contains a data.frame for each zone with 14C and TT
+opm_list_fun <- function(x){
+  opm_df <- list(data.frame(
+    Delta14C_TT = unlist(x),
+    TT = model_par$TT
+  ))
+}
 
-opm <- map(feat, ~one_pool_model(.x))
+opm_list <- map(opm_2009_list, ~opm_list_fun(.x))
+names(opm_list) <- feat
 
 
-# Extract 14C fraction for each zone
-#not working: opm_F14 <- map(opm, getF14)
+#Find index of maximum value in each list
+max_ind <- map(opm_list, function(x){
+  which.max(x[[1]]$Delta14C_TT)
+})
 
-#not ideal: need to do everystep three times...
-opm_NHZ3 <- opm[[1]] %>% 
-  map(getF14) 
+#NHZ3
+max_ind[[1]]
 
-# Extract values for year 2009 (last entry in list)
-opm_NHZ3_2009 <- opm_NHZ3 %>% 
-  map(217) 
+
+##STOPPED HERE
+
+
   
-df_NHZ3_2009 <- data.frame(
-    Delta14C_TT = unlist(opm_NHZ3_2009),
-    TT = model_par$TT)
+
+## Extract TT where difference between modelled and measured 14C is smallest
+#Extract measured 14C values for NHZ3
+d14c_obs_NHZ3 <- df_test %>% 
+  filter(Zones == "NHZone3") %>% .$Delta14C  # observed 14C values for NHZ3
+
+# list of indices with closest match to d14c_obs
+d14c_obs_NHZ3_ix <- vector(mode = "list", length = length(d14c_obs_NHZ3))
+d14c_obs_NHZ3_ix <- lapply(seq_along(d14c_obs_NHZ3), function(i) {
+  d14c_obs_NHZ3_ix[i] <- which.min(abs(unlist(opm_NH3_f14_2009[27:2000]) - d14c_obs_NHZ3[i]))
+}) 
+
+TT <- seq(1,2000)
+TurnoverTime <- vector(mode = "list", length = length(d14c_obs_NHZ3_ix))
+TurnoverTime <- lapply(seq_along(d14c_obs_NHZ3_ix), function(i) {
+  TurnoverTime[i] <- TT[d14c_obs_NHZ3_ix[[i]]]
+}) 
+
+# compare output
+AfSIS_14C_TurnoverTime_NHZ3 <- data.frame(Delta14C = unlist(d14c_obs_NHZ3), 
+                                          TurnoverTime = unlist(TurnoverTime),
+                                          Zones = "NHZone3")
+
+view(AfSIS_14C_TurnoverTime_NHZ3)
 
 
-
-opm_SHZ12 <- opm[[2]] %>% 
-  map(getF14)
-opm_SHZ3 <- opm[[3]] %>% 
-  map(getF14)
 
 
