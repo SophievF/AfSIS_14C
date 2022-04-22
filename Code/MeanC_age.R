@@ -88,10 +88,6 @@ opm_fun <- function(x){
     map(217)
 }
 
-# create list that contains model results (14C) for each atmospheric zone
-# takes a lot time to create list > 20min
-opm_2009_list <- map(feat, ~opm_fun(.x))
-
 # function to create list that contains a data.frame for each zone with 14C and TT
 opm_list_fun <- function(x){
   opm_df <- list(data.frame(
@@ -100,48 +96,81 @@ opm_list_fun <- function(x){
   ))
 }
 
-opm_list <- map(opm_2009_list, ~opm_list_fun(.x))
+# apply both functions at the same time
+# takes a lot time to create list > 20min
+opm_list <- map(
+  map(feat, ~opm_fun(.x)), ~opm_list_fun(.x)
+)
 names(opm_list) <- feat
-
 
 #Find index of maximum value in each list
 max_ind <- map(opm_list, function(x){
   which.max(x[[1]]$Delta14C_TT)
 })
 
-#NHZ3
-max_ind[[1]]
 
+## Extract TT where difference between modeled and measured 14C is smallest
+# Function to extract observed 14C values for each zone
+d14C_measured_fun <- function(x){
+  df_14c_zones %>% 
+    filter(Zones == x) %>% 
+   .$Delta14C
+}
 
-##STOPPED HERE
-
-#Make figures that compare measured and modelled 14C values
-  
-
-## Extract TT where difference between modelled and measured 14C is smallest
-#Extract measured 14C values for NHZ3
-d14c_obs_NHZ3 <- df_test %>% 
-  filter(Zones == "NHZone3") %>% .$Delta14C  # observed 14C values for NHZ3
+d14C_obs <- map(feat, ~d14C_measured_fun(.x))
 
 # list of indices with closest match to d14c_obs
-d14c_obs_NHZ3_ix <- vector(mode = "list", length = length(d14c_obs_NHZ3))
-d14c_obs_NHZ3_ix <- lapply(seq_along(d14c_obs_NHZ3), function(i) {
-  d14c_obs_NHZ3_ix[i] <- which.min(abs(unlist(opm_NH3_f14_2009[27:2000]) - d14c_obs_NHZ3[i]))
-}) 
+empty_list_fun <- function(x){
+  vector(mode = "list", length = length(x))
+}
 
-TT <- seq(1,2000)
-TurnoverTime <- vector(mode = "list", length = length(d14c_obs_NHZ3_ix))
-TurnoverTime <- lapply(seq_along(d14c_obs_NHZ3_ix), function(i) {
-  TurnoverTime[i] <- TT[d14c_obs_NHZ3_ix[[i]]]
-}) 
-
-# compare output
-AfSIS_14C_TurnoverTime_NHZ3 <- data.frame(Delta14C = unlist(d14c_obs_NHZ3), 
-                                          TurnoverTime = unlist(TurnoverTime),
-                                          Zones = "NHZone3")
-
-view(AfSIS_14C_TurnoverTime_NHZ3)
+d14C_obs_NHZ3_ix <- empty_list_fun(x = d14C_obs[[1]])
+d14C_obs_SHZ12_ix <- empty_list_fun(x = d14C_obs[[2]])
+d14C_obs_SHZ3_ix <- empty_list_fun(x = d14C_obs[[3]])
 
 
+# function to extract TT where observed and measured values are closest
+d14C_match_fun <- function(i, y, x, z) {
+  x[i] <- which.min(abs(y - z[i]))
+}
+
+# apply function for each zone and store results in data.frame
+d14C_obs_NHZ3_ix <- map(seq_along(seq_along(d14C_obs[[1]])), 
+                        ~d14C_match_fun(i = .x, x = d14C_obs_NHZ3_ix, 
+                                        y = unlist(opm_list$NHZone3)[max_ind[[1]]:6500], 
+                                        z = d14C_obs[[1]]))
 
 
+df_TT_NHZ3 <- data.frame(TurnoverTime = unlist(d14C_obs_NHZ3_ix),
+                         Delta14C = unlist(d14C_obs[[1]]),
+                         Zones = feat[1])
+
+d14C_obs_SHZ12_ix <- map(seq_along(seq_along(d14C_obs[[2]])), 
+                         ~d14C_match_fun(i = .x, x = d14C_obs_SHZ12_ix, 
+                                         y = unlist(opm_list$SHZone12)[max_ind[[2]]:6500], 
+                                         z = d14C_obs[[2]]))
+
+df_TT_SHZ12 <- data.frame(TurnoverTime = unlist(d14C_obs_SHZ12_ix),
+                         Delta14C = unlist(d14C_obs[[2]]),
+                         Zones = feat[2])
+
+d14C_obs_SHZ3_ix <- map(seq_along(seq_along(d14C_obs[[3]])), 
+                        ~d14C_match_fun(i = .x, x = d14C_obs_SHZ3_ix, 
+                                        y = unlist(opm_list$SHZone3)[max_ind[[3]]:6500], 
+                                        z = d14C_obs[[3]]))
+
+df_TT_SHZ3 <- data.frame(TurnoverTime = unlist(d14C_obs_SHZ3_ix),
+                         Delta14C = unlist(d14C_obs[[3]]),
+                         Zones = feat[3])
+
+
+df_TT <- rbind(df_TT_NHZ3, df_TT_SHZ12, df_TT_SHZ3)
+
+df_14C_TT <- df_14c_zones %>% 
+  left_join(df_TT, by = c("Delta14C", "Zones"))
+
+df_14C_TT %>% 
+  ggplot(aes(x = Delta14C, y = TurnoverTime)) +
+  geom_point()
+
+write.csv(df_14C_TT, "./Data/df_14C_TT.csv", row.names = FALSE)
