@@ -1,6 +1,9 @@
 ## Sophie von Fromm
 ## 2022-April-08
 
+
+###CODE IS NOT WORKING####
+
 ## Calculate mean C age based on an one-pool model from 14C data
 
 # Code adopted from Sue (Khomo et al. 2017, SI p. 19) and Jeff
@@ -173,4 +176,8 @@ df_14C_TT %>%
   ggplot(aes(x = Delta14C, y = TurnoverTime)) +
   geom_point()
 
+view(df_14C_TT)
+
 write.csv(df_14C_TT, "./Data/df_14C_TT.csv", row.names = FALSE)
+
+
