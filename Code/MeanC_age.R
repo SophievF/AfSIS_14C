@@ -91,6 +91,10 @@ opm_fun <- function(x){
     map(217)
 }
 
+# create list that contains model results (14C) for each atmospheric zone
+# takes a lot time to create list > 20min
+opm_2009_list <- map(feat, ~opm_fun(.x))
+
 # function to create list that contains a data.frame for each zone with 14C and TT
 opm_list_fun <- function(x){
   opm_df <- list(data.frame(
