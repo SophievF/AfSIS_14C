@@ -1,12 +1,9 @@
 ## Sophie von Fromm
-## 2022-April-08
-
-
-###CODE IS NOT WORKING####
+## 2022-April-25
 
 ## Calculate mean C age based on an one-pool model from 14C data
 
-# Code adopted from Sue (Khomo et al. 2017, SI p. 19) and Jeff
+# Code adopted from (Khomo et al. 2017, SI p. 19) and with input from Jeff Beem-Miller
 # Idea for code from Sierra et al. 2014 and radiocarbon book (chapter 3)
 
 ## Load SoilR
@@ -47,141 +44,168 @@ df_14c_zones %>%
   group_by(Zones) %>% 
   count()
 
+# Define atmospheric 14C curve for the different regions/records
+NHZone3 <- bind.C14curves(prebomb = IntCal13, postbomb = Hua2013$NHZone3, 
+                          time.scale = "AD")
+SHZone12 <- bind.C14curves(prebomb = IntCal13, postbomb = Hua2013$SHZone12, 
+                           time.scale = "AD")
+SHZone3 <- bind.C14curves(prebomb = IntCal13, postbomb = Hua2013$SHZone3, 
+                          time.scale = "AD")
 
-# Define 14C atmosphere curves for different zones
-curve_list <- list(
-  NHZone3 = NHZone3 <- bind.C14curves(prebomb = IntCal13, postbomb = Hua2013$NHZone3, 
-                                      time.scale = "AD"), 
-  SHZone12 = SHZone12 <- bind.C14curves(prebomb = IntCal13, postbomb = Hua2013$SHZone12, 
-                                        time.scale = "AD"),
-  SHZone3 = SHZone3 <- bind.C14curves(prebomb = IntCal13, postbomb = Hua2013$SHZone3, 
-                                      time.scale = "AD"))
+# Define model parameters for calculation 
+ModelParameter_TT <- data.frame(
+  TT = seq_len(6500), ## Turnover time to search for matching 14C value
+  In = 100) %>%  #Arbitrary value since system is in steady state
+  mutate(k = 1/TT, #Decomposition rate: 1/turnover time in 1/yr
+         F0 = k/(k+(1/8267)), #Fraction modern in the soil under steady state conditions
+         DeltaF0 = (F0-1) * 1000, #Calculate Delta14C from F0
+         C0 = In * TT) #Carbon stock in the soil Cstock = Input/k
 
-
-# Define model parameters
-model_par <- data.frame(
-  #Use smaller number for testing
-  TT = seq_len(6500), # possible turnover times to search for matching 14C values
-  In = 100) %>% # arbitrary C input value since system is assumed to be in steady state
-  mutate(k = 1/TT, # decomposition rate: 1/turn over time in 1/yr
-         F0 = k/(k+(1/8267)), # fraction modern in the soil under steady state conditions
-         DeltaF0 = (F0-1)*100, # calculate delta14C from fraction modern
-         C0 = In * TT) # carbon stock in the soil; Cstock = Input/k
-
-# Run one pool model for each possible turnover and for the three different zones
-# k - column 3, C0 - column 6, DeltaF0 - column 5, In -column 2
-
-
-#Function to run model for each atmospheric zone (n = 3)
-feat <- names(curve_list)
-
-one_pool_model <- function(x){
-  pmap(model_par, ~OnepModel14(t = seq(1901,2009, by = 0.5),
-                               k =  ..3, C0 = ..6,
-                               F0_Delta14C = ..5, 
-                               In =..2, inputFc = curve_list[[x]]))
+## Function to run model
+# k: column 3, C0: column 6, F0 (in Delta14C): column 5, In: column 2
+opm_fun <- function(zone){
+  ModelParameter_TT %>% 
+    pmap(~OnepModel14(t = seq(1901, 2009, by = 0.5), 
+                      k = ..3, C0 = ..6,
+                      F0 = ..5, In = ..2, 
+                      inputFc = zone))
 }
 
-# function to apply model and extract values for target year (2009) by zone
-opm_fun <- function(x){
-  opm <- map(feat, ~one_pool_model(.x))
-  names(opm) <- feat
-  opm_2009 <- opm[[x]] %>% 
+## Run model for each zone
+# NHZone3
+opm_NHZ3 <- opm_fun(zone = NHZone3)
+
+#SHZone12
+opm_SHZ12 <- opm_fun(zone = SHZone12)
+
+#SHZone3
+opm_SHZ3 <- opm_fun(zone = SHZone3)
+
+## Function to extract 14C for year 2009 (last entry in model list = 217)
+# takes quite some time to run model
+d14C_extract <- function(model){
+  model %>% 
     map(getF14) %>% 
     map(217)
 }
 
-# create list that contains model results (14C) for each atmospheric zone
-# takes a lot time to create list > 20min
-opm_2009_list <- map(feat, ~opm_fun(.x))
+# output: list for each turnover time (1-6500yrs) for the year 2009
 
-# function to create list that contains a data.frame for each zone with 14C and TT
-opm_list_fun <- function(x){
-  opm_df <- list(data.frame(
-    Delta14C_TT = unlist(x),
-    TT = model_par$TT
-  ))
+#NHZone3
+opm_d14C_2009_NHZ3 <- d14C_extract(model = opm_NHZ3)
+
+#SHZone12
+opm_d14C_2009_SHZ12 <- d14C_extract(model = opm_SHZ12)
+
+#SHZone3
+opm_d14C_2009_SHZ3 <- d14C_extract(model = opm_SHZ3)
+
+## Function to convert list into a data frame to check for highest 14C value
+# Due to "bomb14C" there are two possible turnover times for high 14C values
+opm_df <- function(model_results){
+  data.frame(
+    Delta14C_mod = unlist(model_results),
+    TurnoverTime = ModelParameter_TT$TT
+  )
 }
 
-# apply both functions at the same time
-# takes a lot time to create list > 20min
-opm_list <- map(
-  map(feat, ~opm_fun(.x)), ~opm_list_fun(.x)
-)
-names(opm_list) <- feat
+#NHZone3
+opm_NHZ3_df <- opm_df(model_results = opm_d14C_2009_NHZ3)
 
-#Find index of maximum value in each list
-max_ind <- map(opm_list, function(x){
-  which.max(x[[1]]$Delta14C_TT)
+#SHZone12
+opm_SHZ12_df <- opm_df(model_results = opm_d14C_2009_SHZ12)
+
+#SHZone3
+opm_SHZ3_df <- opm_df(model_results = opm_d14C_2009_SHZ3)
+
+## Position of highest 14C value (bomb peak)
+# only consider higher values to make sure that always the longer TT get's selected
+# older turnover times are more realistic for bulk 14C measurements
+which.max(opm_NHZ3_df$Delta14C_mod) 
+which.max(opm_SHZ12_df$Delta14C_mod) 
+which.max(opm_SHZ3_df$Delta14C_mod) 
+
+#Function to extract observed/measured 14C values for each zone
+d14C_obs <- function(zone){
+  df_14c_zones %>% 
+    filter(Zones == zone) %>% 
+    .$Delta14C
+}
+
+#NHZone3
+d14C_obs_NHZ3 <- d14C_obs(zone = "NHZone3")
+
+#SHZone12
+d14C_obs_SHZ12 <- d14C_obs(zone = "SHZone12")
+
+#SHZone3
+d14C_obs_SHZ3 <- d14C_obs(zone = "SHZone3")
+
+# Function to create empty list to find closest match between observed and modeled 14C
+empty_list <- function(data){
+  vector(mode = "list", length = length(data))
+}
+
+#NHZone3
+d14C_obs_NHZ3_l <- empty_list(data = d14C_obs_NHZ3)
+
+#SHZone12
+d14C_obs_SHZ12_l <- empty_list(data = d14C_obs_SHZ12)
+
+#SHZone3
+d14C_obs_SHZ3_l <- empty_list(data = d14C_obs_SHZ3)
+
+## Find closest match between observed an modeled 14C
+
+#NHZone3
+d14C_obs_NHZ3_l <- map(seq_along(d14C_obs_NHZ3), function(i){
+  d14C_obs_NHZ3_l[i] <- which.min(abs(unlist(opm_d14C_2009_NHZ3[27:6500]) - d14C_obs_NHZ3[i]))
+})
+
+#SHZone12
+d14C_obs_SHZ12_l <- map(seq_along(d14C_obs_SHZ12), function(i){
+  d14C_obs_SHZ12_l[i] <- which.min(abs(unlist(opm_d14C_2009_SHZ12[26:6500]) - d14C_obs_SHZ12[i]))
+})
+
+#SHZone3
+d14C_obs_SHZ3_l <- map(seq_along(d14C_obs_SHZ3), function(i){
+  d14C_obs_SHZ3_l[i] <- which.min(abs(unlist(opm_d14C_2009_SHZ3[26:6500]) - d14C_obs_SHZ3[i]))
 })
 
 
-## Extract TT where difference between modeled and measured 14C is smallest
-# Function to extract observed 14C values for each zone
-d14C_measured_fun <- function(x){
-  df_14c_zones %>% 
-    filter(Zones == x) %>% 
-   .$Delta14C
-}
+## Extract and merge results
 
-d14C_obs <- map(feat, ~d14C_measured_fun(.x))
+#NHZone3
+TT_NHZ3_df <- data.frame(Delta14C = unlist(d14C_obs_NHZ3), 
+                         TurnoverTime = unlist(d14C_obs_NHZ3_l),
+                         Zones = "NHZone3")
 
-# list of indices with closest match to d14c_obs
-empty_list_fun <- function(x){
-  vector(mode = "list", length = length(x))
-}
+#SHZone12
+TT_SHZ12_df <- data.frame(Delta14C = unlist(d14C_obs_SHZ12), 
+                          TurnoverTime = unlist(d14C_obs_SHZ12_l),
+                          Zones = "SHZone12")
 
-d14C_obs_NHZ3_ix <- empty_list_fun(x = d14C_obs[[1]])
-d14C_obs_SHZ12_ix <- empty_list_fun(x = d14C_obs[[2]])
-d14C_obs_SHZ3_ix <- empty_list_fun(x = d14C_obs[[3]])
+#SHZone3
+TT_SHZ3_df <- data.frame(Delta14C = unlist(d14C_obs_SHZ3), 
+                         TurnoverTime = unlist(d14C_obs_SHZ3_l),
+                         Zones = "SHZone3")
 
 
-# function to extract TT where observed and measured values are closest
-d14C_match_fun <- function(i, y, x, z) {
-  x[i] <- which.min(abs(y - z[i]))
-}
 
-# apply function for each zone and store results in data.frame
-d14C_obs_NHZ3_ix <- map(seq_along(seq_along(d14C_obs[[1]])), 
-                        ~d14C_match_fun(i = .x, x = d14C_obs_NHZ3_ix, 
-                                        y = unlist(opm_list$NHZone3)[max_ind[[1]]:6500], 
-                                        z = d14C_obs[[1]]))
-
-
-df_TT_NHZ3 <- data.frame(TurnoverTime = unlist(d14C_obs_NHZ3_ix),
-                         Delta14C = unlist(d14C_obs[[1]]),
-                         Zones = feat[1])
-
-d14C_obs_SHZ12_ix <- map(seq_along(seq_along(d14C_obs[[2]])), 
-                         ~d14C_match_fun(i = .x, x = d14C_obs_SHZ12_ix, 
-                                         y = unlist(opm_list$SHZone12)[max_ind[[2]]:6500], 
-                                         z = d14C_obs[[2]]))
-
-df_TT_SHZ12 <- data.frame(TurnoverTime = unlist(d14C_obs_SHZ12_ix),
-                         Delta14C = unlist(d14C_obs[[2]]),
-                         Zones = feat[2])
-
-d14C_obs_SHZ3_ix <- map(seq_along(seq_along(d14C_obs[[3]])), 
-                        ~d14C_match_fun(i = .x, x = d14C_obs_SHZ3_ix, 
-                                        y = unlist(opm_list$SHZone3)[max_ind[[3]]:6500], 
-                                        z = d14C_obs[[3]]))
-
-df_TT_SHZ3 <- data.frame(TurnoverTime = unlist(d14C_obs_SHZ3_ix),
-                         Delta14C = unlist(d14C_obs[[3]]),
-                         Zones = feat[3])
-
-
-df_TT <- rbind(df_TT_NHZ3, df_TT_SHZ12, df_TT_SHZ3)
-
-df_14C_TT <- df_14c_zones %>% 
-  left_join(df_TT, by = c("Delta14C", "Zones"))
-
-df_14C_TT %>% 
+TT_SHZ3_df %>% 
   ggplot(aes(x = Delta14C, y = TurnoverTime)) +
   geom_point()
 
-view(df_14C_TT)
+# Merge all three data frames and add back to original data
+df_14C_TT <- rbind(TT_NHZ3_df, TT_SHZ12_df, TT_SHZ3_df) %>% 
+  right_join(df_14c_zones, by = c("Delta14C", "Zones")) %>%
+  #remove duplicate rows that are created due to samples that have the same 14C value within one zone
+  unique() %>% 
+  tibble()
+
+# Plot results
+df_14C_TT %>% 
+  ggplot(aes(x = Delta14C, y = TurnoverTime, color = Zones)) +
+  geom_point()
 
 write.csv(df_14C_TT, "./Data/df_14C_TT.csv", row.names = FALSE)
-
-
