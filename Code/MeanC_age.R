@@ -1,10 +1,9 @@
-## Sophie von Fromm
-## 2022-April-25
+## Calculate mean C age from 14C values from the AfSIS dataset ##
+## Sophie von Fromm ##
+## 2022-04-16 ##
 
 ## Calculate mean C age based on an one-pool model from 14C data
-
 # Code adopted from (Khomo et al. 2017, SI p. 19) and with input from Jeff Beem-Miller
-# Idea for code from Sierra et al. 2014 and radiocarbon book (chapter 3)
 
 ## Load SoilR
 installed_packages <- "SoilR" %in% rownames(installed.packages())
