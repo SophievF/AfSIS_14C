@@ -22,7 +22,7 @@ KG_p <- raster::extract(KG_p_raster, cbind(AfSIS_LongLat$Longitude,
                                            AfSIS_LongLat$Latitude))
 
 # Load projected climate zones
-KG_f_dir <- ".Data/ClimateZones/Beck_KG_V1_future_0p0083.tif"
+KG_f_dir <- "./Data/ClimateZones/Beck_KG_V1_future_0p0083.tif"
 KG_f_raster <- raster::raster(KG_f_dir)
 KG_f <- raster::extract(KG_f_raster, cbind(AfSIS_LongLat$Longitude,
                                            AfSIS_LongLat$Latitude))
@@ -114,5 +114,5 @@ AfSIS_14C_KG <- AfSIS_14C_KG %>%
   )) %>% 
   dplyr::select(-KG_p, -KG_f)
 
-write.csv(AfSIS_14C_XRPD_Global_KG, row.names = FALSE,
+write.csv(AfSIS_14C_KG, row.names = FALSE,
           "./Data/AfSIS_LongLat_ClimateZones.csv")
