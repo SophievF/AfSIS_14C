@@ -2,6 +2,8 @@
 ## Sophie von Fromm ##
 ## 2022-04-27 ##
 
+library(tidyverse)
+library(raster)
 
 # KG data is from Beck et al. 2018
 # https://doi.org/10.1038/sdata.2018.214
@@ -26,22 +28,21 @@ KG_f <- raster::extract(KG_f_raster, cbind(AfSIS_LongLat$Longitude,
                                            AfSIS_LongLat$Latitude))
 
 #Merge all three data sets
-AfSIS_14C_XRPD_Global_KG <- cbind(AfSIS_14C_XRPD_Global, 
-                                  KG_p, KG_f) %>% 
+AfSIS_14C_KG <- cbind(AfSIS_LongLat, KG_p, KG_f) %>% 
   tibble()
 
 #Check which climate zones are present in africa
-AfSIS_14C_XRPD_Global_KG %>% 
+AfSIS_14C_KG %>% 
   group_by(KG_p) %>% 
   count()
 
-AfSIS_14C_XRPD_Global_KG %>% 
+AfSIS_14C_KG %>% 
   group_by(KG_f) %>% 
   count()
 
 #Convert numbers in actual climate zones based on legend.txt
 #Create new group (KG_p/f_group) that summarizes main climate zones
-AfSIS_14C_XRPD_Global_KG <- AfSIS_14C_XRPD_Global_KG %>% 
+AfSIS_14C_KG <- AfSIS_14C_KG %>% 
   mutate(KG_p_code = case_when(
     KG_p == 1 ~ "Af",
     KG_p == 2 ~ "Am",
@@ -113,5 +114,5 @@ AfSIS_14C_XRPD_Global_KG <- AfSIS_14C_XRPD_Global_KG %>%
   )) %>% 
   dplyr::select(-KG_p, -KG_f)
 
-write_csv(AfSIS_14C_XRPD_Global_KG, 
+write.csv(AfSIS_14C_XRPD_Global_KG, row.names = FALSE,
           "./Data/AfSIS_LongLat_ClimateZones.csv")
