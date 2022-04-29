@@ -1,5 +1,6 @@
-## Sophie von Fromm
-## 2022-Apr-08
+## Function to load 14C data sets ##
+## Sophie von Fromm ##
+## 2022-Apr-08 ##
 
 
 #Function to load csv files that contain 14C data
