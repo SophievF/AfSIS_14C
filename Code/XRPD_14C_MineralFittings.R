@@ -136,6 +136,31 @@ save(mineral_fit,
 mineral_grouped <- summarise_mineralogy(mineral_fit, type = "grouped", 
                                         order = TRUE)
 
-write.csv(mineral_grouped, row.names = FALSE,
-          "./Data/XRPD_mineral_grouped.csv")
+# write.csv(mineral_grouped, row.names = FALSE,
+#           "./Data/XRPD_mineral_grouped.csv")
 
+##Merge XRPD and AfSIS data back together
+#Prepare mineral data
+mineral_SSN <- mineral_grouped %>% 
+  dplyr::rename(SSN.XRPD = sample_id) %>% 
+  replace(is.na(.), 0)
+
+#Prepare matches between 14C and XRPD data
+AfSIS_SSN_match <- AfSIS_14C_XRPD_match %>% 
+  dplyr::select(SSN.14C, SSN.XRPD, Depth.14C) %>% 
+  dplyr::rename(SSN = SSN.14C,
+                Depth = Depth.14C) 
+
+#Prepare 14C data
+AfSIS_SSN <- read_csv("./Data/AfSIS_LongLat.csv") %>% 
+  filter(SSN != "icr042245",
+         SSN != "icr042246",
+         SSN != "icr042265",
+         SSN != "icr042266")
+
+AfSIS_mineral_SSN <- AfSIS_SSN %>% 
+  full_join(AfSIS_SSN_match, by = c("SSN", "Depth")) %>% 
+  left_join(mineral_SSN, by = "SSN.XRPD")
+
+write.csv(AfSIS_mineral_SSN, row.names = FALSE,
+          "./Data/AfSIS_Mineral_fits.csv")
