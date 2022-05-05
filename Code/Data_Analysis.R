@@ -380,4 +380,47 @@ ggarrange(Mox_14C_BOT, Clay21_14C_BOT, GPP_14C_BOT, nrow = 3,
 
 ggsave("./Figures/AfSIS_14C_FigureA4.jpeg", width = 12, height = 7)
 
+###Figure 3 and A5
+##Mean C age ~ clay content colored by clay mineral type
+ClayType_14C_fun <- function(dataset){
+  dataset %>% 
+    mutate(Clay_Minerals = case_when(
+      Clay_2_1*Clay_8um/100 > 0 ~ "2:1 clay minerals",
+      Clay_1_1*Clay_8um/100 > 0 &
+        Clay_2_1*Clay_8um/100 == 0 ~ "1:1 clay minerals only"
+    )) %>% 
+    #drop samples that don't have any clay minerls
+    drop_na(Clay_Minerals) %>% 
+    #create mineral groups for faceting
+    mutate(Clay_Minerals_Content = case_when(
+      Clay_Minerals == "2:1 clay minerals" ~ Clay_2_1*Clay_8um/100,
+      Clay_Minerals == "1:1 clay minerals only" ~ Clay_1_1*Clay_8um/100
+    )) %>% 
+    #exclude arid samples
+    filter(KG_p_group != "Arid") %>% 
+    ggplot(aes(y = TurnoverTime, x = Clay_8um, fill = Clay_Minerals_Content)) +
+    geom_point(size = 7, shape = 21) +
+    facet_wrap(~Clay_Minerals) +
+    theme_bw(base_size = 21) +
+    theme_own +
+    theme(strip.text = element_text(size = 16),
+          panel.spacing.x = unit(1, "cm"),
+          legend.title = element_text(size = 19)) +
+    scale_y_continuous("Mean SOC age [yr]", trans = reverselog_trans(10)) +
+    scale_x_continuous("Clay + fine silt fraction [%]", expand = c(0,0),
+                       limits = c(0,100)) +
+    scale_fill_viridis_c("Clay mineral\ncontent in clay\nfraction [%]", 
+                         option = "magma", trans = "log10", direction = -1) +
+    guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
+                                 ticks.linewidth = 2, title.vjust = 2))
+}
+
+#Plot for topsoil and subsoil samples
+ClayType_14C_fun(dataset = AfSIS_TOP)
+ggsave("./AfSIS_14C_Figure3.jpeg", width = 11, height = 7)
+
+ClayType_14C_fun(dataset = AfSIS_BOT)
+ggsave("AfSIS_14C_FigureA5.jpeg", width = 11, height = 7)
+
+
 ##Tables
