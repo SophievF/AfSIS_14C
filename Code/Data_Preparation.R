@@ -62,7 +62,8 @@ AfSIS_data <- AfSIS_all %>%
          Feldspars = `K-feldspar` + Plagioclase) %>%
   ungroup() %>% 
   # remove other minerals
-  dplyr::select(-c(Kaolinite:Background))
+  dplyr::select(-c(Kaolinite:Background)) %>% 
+  dplyr::mutate(Mox = Alox + (1/2 * Feox))
 
 # Check 14C data for anomalies
 plotly::ggplotly(
