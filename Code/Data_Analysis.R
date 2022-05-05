@@ -422,5 +422,47 @@ ggsave("./AfSIS_14C_Figure3.jpeg", width = 11, height = 7)
 ClayType_14C_fun(dataset = AfSIS_BOT)
 ggsave("AfSIS_14C_FigureA5.jpeg", width = 11, height = 7)
 
+###Figure A2
+##Mean C age by depth
+
+boxplot_14C <- AfSIS_14C %>%
+  ggplot(aes(y = TurnoverTime, x = Depth)) +
+  geom_segment(aes(x = 0.4, y = 182, xend = 1, yend = 182),
+               size = 1, color = "darkgrey", linetype = "dashed") +
+  geom_segment(aes(x = 0.4, y = 563, xend = 2, yend = 563),
+               size = 1, color = "darkgrey", linetype = "dashed") +
+  geom_boxplot(notch = TRUE) +
+  theme_bw(base_size = 17) +
+  theme_own +
+  theme(axis.text = element_text(color = "black"),
+        axis.text.y = element_text(face = c("plain", "bold", "plain", "bold",
+                                            "plain", "plain")),
+        axis.title = element_text(face = "bold")) +
+  scale_x_discrete("", labels = c("Topsoil\n(0-20 cm)", "Subsoil\n(20-50 cm)")) +
+  scale_y_continuous("Mean C age [yr]", trans = reverselog_trans(10),
+                     breaks = c(100,182,300,563,1000,3000))
+
+boxplot_14C_diff <- AfSIS_14C %>% 
+  dplyr::select(SiteID, Depth, TurnoverTime, GPP, KG_p_group) %>% 
+  pivot_wider(names_from = Depth, values_from = TurnoverTime) %>% 
+  mutate(TT_Dif = Topsoil-Subsoil) %>% 
+  ggplot(aes(y = TT_Dif, x = KG_p_group, fill = GPP*365/1000)) +
+  geom_boxplot(outlier.shape = NA, notch = TRUE) +
+  geom_jitter(size = 4, shape = 21,
+              position = position_jitterdodge(0.4)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_bw(base_size = 17) +
+  theme_own +
+  scale_x_discrete("", labels = climate_names) +
+  scale_y_continuous("Mean C age [yr]: Topsoil - Subsoil", limits = c(-5200,2000),
+                     expand = c(0,0), breaks = seq(-5000,2000,1000)) +
+  scale_fill_viridis_c("GPP\n[kgC/m?yr]", limits = c(0,2.5), direction = -1) +
+  guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
+                               ticks.linewidth = 2, title.vjust = 2))
+
+ggarrange(boxplot_14C, boxplot_14C_diff, widths = c(0.9,2.1))
+
+ggsave("./Figures/AfSIS_14C_Figure_A2.jpeg", width = 12, height = 6)
+
 
 ##Tables
