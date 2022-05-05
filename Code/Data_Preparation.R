@@ -29,7 +29,7 @@ AfSIS_GPP <- read_csv("./Data/AfSIS_GPP.csv") %>%
   dplyr::rename(SSN = SiteID)
 
 AfSIS_all <- AfSIS_soil_data %>% 
-  left_join(AfSIS_GPP) %>% 
+  left_join(AfSIS_GPP, by = "SSN") %>% 
   left_join(AfSIS_climate) %>% 
   left_join(AfSIS_14C) %>% 
   left_join(AfSIS_XRPD)
