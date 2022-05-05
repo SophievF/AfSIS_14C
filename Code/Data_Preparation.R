@@ -26,10 +26,12 @@ AfSIS_climate <- read_csv("./Data/AfSIS_LongLat_ClimateZones.csv")
 
 # GPP
 AfSIS_GPP <- read_csv("./Data/AfSIS_GPP.csv") %>% 
-  dplyr::rename(SSN = SiteID)
+  dplyr::rename(SSN = SiteID) %>% 
+  #Coordinates have one digit less than orginal data
+  dplyr::select(SSN, GPP)
 
 AfSIS_all <- AfSIS_soil_data %>% 
-  left_join(AfSIS_GPP, by = "SSN") %>% 
+  left_join(AfSIS_GPP) %>% 
   left_join(AfSIS_climate) %>% 
   left_join(AfSIS_14C) %>% 
   left_join(AfSIS_XRPD)
