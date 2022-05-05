@@ -49,11 +49,18 @@ theme_own <- theme(axis.text = element_text(color = "black"),
                    panel.grid.minor = element_blank(),
                    panel.grid.major = element_blank(),
                    strip.background = element_rect(fill = NA),
+                   strip.text = element_text(face = "bold", size = 14),
                    axis.title = element_text(face = "bold"))
 
-#Create facet names for depth
+#Create facet names for depth and climate zones
 depth_names <- c("Topsoil" = "Topsoil (0-20 cm)",
                  "Subsoil" = "Subsoil (20-50 cm)")
+
+climate_names <- c("Arid" = "Arid\n",
+                   "Temperate (seasonal)" = "Temperate\n(seasonal)",
+                   "Temperate (humid)" = "Temperate\n(humid)",
+                   "Tropical (seasonal)" = "Tropical\n(seasonal)",
+                   "Tropical (humid)" = "Tropical\n(humid)")
 
 #Create color variable
 color_climate <- c("#ffffb2", "#c2a5cf", "#762a83", "#a6dba0", "#1b7837")
@@ -149,9 +156,9 @@ dimdesc(AfSIS_PCA_TOP, proba = 0.1)
 
 #Plot PCA
 PCA_biplot_TOP <- PCA_biplot_fun(PCA_data = AfSIS_PCA_TOP, dataset = AfSIS_TOP) +
-  scale_x_continuous("Dimension 1 (52.7%): Control on C content", 
+  scale_x_continuous("Dimension 1 (52.7%): Control on SOC content", 
                      limits = c(-4.6,4.5), breaks = seq(-4,4,2)) +
-  scale_y_continuous("Dimension 2 (22.5%): Control on C age")
+  scale_y_continuous("Dimension 2 (22.5%): Control on SOC age")
   
 
 ##Subsoil results
@@ -161,9 +168,9 @@ AfSIS_PCA_BOT$quali.sup$eta2
 dimdesc(AfSIS_PCA_BOT, proba = 0.1)
 
 PCA_biplot_BOT <- PCA_biplot_fun(PCA_data = AfSIS_PCA_BOT, dataset = AfSIS_BOT) +
-  scale_x_continuous("Dimension 1 (49.5%): Control on C content", 
+  scale_x_continuous("Dimension 1 (49.5%): Control on SOC content", 
                      limits = c(-4.6,4), breaks = seq(-4,4,2)) +
-  scale_y_continuous("Dimension 2 (23.1%): Control on C age") 
+  scale_y_continuous("Dimension 2 (23.1%): Control on SOC age") 
 
 ###Scatterplot and violin plots: Mean C age ~ SOC colored by climate zones
 
@@ -180,7 +187,7 @@ scatter_fun <- function(dataset){
           legend.title = element_text(size = 20)) +
     scale_x_continuous("SOC [wt-%]", expand = c(0,0),
                        limits = c(0,8)) +
-    scale_y_continuous("Mean C age [yr]", trans = reverse_trans()) +
+    scale_y_continuous("Mean SOC age [yr]", trans = reverse_trans()) +
     scale_fill_manual("Climate zones:", drop = FALSE,
                       values = color_climate_2) +
     guides(fill = guide_legend(ncol = 3,
@@ -211,7 +218,7 @@ vio_Cage_fun <- function(dataset){
           panel.border = element_blank(),
           axis.line = element_line(color = "black"),
           axis.title = element_text(face = "plain")) +
-    scale_y_continuous("Mean C age [yr]", trans = "reverse") +
+    scale_y_continuous("Mean SOC age [yr]", trans = "reverse") +
     scale_fill_manual("Climate zones",
                       values = color_climate)
 }
@@ -240,29 +247,6 @@ vio_SOC_fun <- function(dataset){
     scale_fill_manual("Climate zones",
                       values = color_climate)
 }
-
-AfSIS_14C %>% 
-  filter(Depth == "Topsoil") %>% 
-  ggplot(aes(y = CORG, x = KG_p_group, fill = KG_p_group)) +
-  geom_violin() +
-  theme_bw(base_size = 16) +
-  theme(axis.text = element_text(color = "black"),
-        panel.grid.minor = element_blank(),
-        panel.grid.major = element_blank(),
-        axis.text.x = element_blank(),
-        legend.position = "none",
-        axis.title.x = element_blank(),
-        axis.title.y = element_text(size = 15),
-        plot.background = element_blank(),
-        axis.ticks.x = element_blank(),
-        panel.border = element_blank(),
-        axis.line = element_line(color = "black")) +
-  scale_y_continuous("SOC [wt-%]", limits = c(8,0), expand = c(0,0),
-                     trans = reverse_trans()) +
-  scale_fill_manual("Climate zones",
-                    values = c("#ffffb2",
-                               "#c2a5cf", "#762a83", 
-                               "#a6dba0", "#1b7837"))
 
 #Plot topsoil and subsoil data
 vio_SOC_TOP <- vio_SOC_fun(dataset = AfSIS_TOP)
@@ -299,5 +283,101 @@ ggarrange(scatter_vio_BOT, PCA_biplot_BOT, ncol = 2, legend.grob = legend,
 ggsave("./Figures/AfSIS_14C_FigureA3.jpeg", width = 12, height = 8)
 
 ###Figure 2 and A4
+##Scatter plot: Mean C age ~ SOC colored by Mox, clay minerals, GPP
+#Mox
+Mox_14C_fun <- function(dataset){
+  dataset %>% 
+    ggplot(aes(y = TurnoverTime, x = CORG,
+               fill = Mox)) +
+    geom_point(shape = 21, size = 5) +
+    facet_wrap(~KG_p_group, nrow = 1, labeller = as_labeller(climate_names)) +
+    theme_bw(base_size = 20) +
+    theme_own +
+    theme(axis.title.x = element_blank(),
+          legend.margin = margin(t = -50, r = 0, b = 0, l = 0, unit = "pt"),
+          legend.text = element_text(size = 14),
+          legend.title = element_text(size = 16)) +
+    scale_y_continuous("", trans = reverselog_trans(10)) +
+    scale_x_continuous(trans = "log10") +
+    scale_fill_viridis_c("Oxalate-extractable\nmetals [wt-%]", 
+                         trans = "log10", option = "inferno", limits = c(0.01,6),
+                         breaks = c(0.03,0.3,3), direction = -1) +
+    guides(fill = guide_colorbar(barheight = 5, frame.colour = "black", 
+                                 ticks.linewidth = 2))
+}
+
+#Plot for topsoil and subsoil samples
+Mox_14C_TOP <- Mox_14C_fun(dataset = AfSIS_TOP)
+Mox_14C_BOT <- Mox_14C_fun(dataset = AfSIS_BOT)
+
+#2:1 clay minerals
+Clay21_14C_fun <- function(dataset){
+  dataset %>% 
+    ggplot(aes(y = TurnoverTime, x = CORG,
+               fill = Clay_2_1*Clay_8um/100, color = "")) +
+    geom_point(size = 5, shape = 21) +
+    facet_wrap(~KG_p_group, nrow = 1) +
+    theme_bw(base_size = 20) +
+    theme_own +
+    theme(axis.title = element_text(face = "bold"),
+          strip.text = element_blank(),
+          axis.title.x = element_blank(),
+          legend.margin = margin(t = -15, r = 10, b = -20, l = 0, unit = "pt"),
+          legend.text = element_text(size = 14),
+          legend.title = element_text(size = 16),
+          legend.background = element_blank()) +
+    scale_y_continuous("Mean SOC age [yr]", trans = reverselog_trans(10)) +
+    scale_x_continuous(trans = "log10") +
+    scale_fill_viridis_c("2:1 clay minerals\nin clay fraction [%]", 
+                         trans = "log10", option = "magma", direction = -1,
+                         na.value = "grey80", breaks = c(0.3,3.0,30)) +
+    scale_color_manual(values = "black", labels = "0") +
+    guides(fill = guide_colorbar(barheight = 5, frame.colour = "black", 
+                                 ticks.linewidth = 2, order = 1),
+           color = guide_legend("", order = 2,
+                                override.aes = list(fill = "grey80"))) 
+}
+
+#Plot for topsoil and subsoil samples
+Clay21_14C_TOP <- Clay21_14C_fun(dataset = AfSIS_TOP)
+Clay21_14C_BOT <- Clay21_14C_fun(dataset = AfSIS_BOT)
+
+#GPP
+GPP_14C_fun <- function(dataset){
+  dataset %>% 
+    ggplot(aes(y = TurnoverTime, x = CORG,
+               fill = GPP*365/1000)) +
+    geom_point(shape = 21, size = 5) +
+    facet_wrap(~KG_p_group, nrow = 1) +
+    theme_bw(base_size = 20) +
+    theme_own + 
+    theme(axis.title = element_text(face = "bold"),
+          strip.text = element_blank(),
+          legend.margin = margin(t = 0, r = 65, b = 0, l = 0, unit = "pt"),
+          legend.text = element_text(size = 14),
+          legend.title = element_text(size = 16)) +
+    scale_y_continuous("", trans = reverselog_trans(10)) +
+    scale_x_continuous("SOC [wt-%]", trans = "log10") +
+    scale_fill_viridis_c("GPP\n[kgC/m?yr]", direction = -1, limits = c(0,2.5),
+                         breaks = c(0,1,2)) +
+    guides(fill = guide_colorbar(barheight = 5, frame.colour = "black", 
+                                 ticks.linewidth = 2))
+}
+
+#Plot for topsoil and subsoil samples
+GPP_14C_TOP <- GPP_14C_fun(dataset = AfSIS_TOP)
+GPP_14C_BOT <- GPP_14C_fun(dataset = AfSIS_BOT)
+
+ggarrange(Mox_14C_TOP, Clay21_14C_TOP, GPP_14C_TOP, nrow = 3,
+          labels = c("a)", "b)", "c)"), label.x = 0.04, label.y = 1.04,
+          heights = c(1.2,1,1.2))
+
+ggsave("./Figures/AfSIS_14C_Figure2.jpeg", width = 12, height = 7)
+
+ggarrange(Mox_14C_BOT, Clay21_14C_BOT, GPP_14C_BOT, nrow = 3,
+          labels = c("a)", "b)", "c)"), label.x = 0.04, label.y = 1.04,
+          heights = c(1.2,1,1.2))
+
+ggsave("./Figures/AfSIS_14C_FigureA4.jpeg", width = 12, height = 7)
 
 ##Tables
