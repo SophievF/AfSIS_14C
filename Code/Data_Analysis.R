@@ -115,7 +115,7 @@ AfSIS_PCA_TOP <- AfSIS_PCA_fun(dataset = AfSIS_TOP)
 AfSIS_PCA_BOT <- AfSIS_PCA_fun(dataset = AfSIS_BOT)
 
 #Function to extract and plot data
-PCA_biplot_fun <- function(PCA_data, dataset){
+PCA_biplot_fun <- function(PCA_data, dataset, sub.variable){
   #Number of Dimensions to use
   ind <- data.frame(get_pca_ind(PCA_data)$coord)
   quanti.sup <- data.frame(PCA_data$quanti.sup$coord, row.names = "C age")
@@ -127,7 +127,7 @@ PCA_biplot_fun <- function(PCA_data, dataset){
            (max(ind[, "Dim.2"]) - min(ind[, "Dim.2"])/(max(var[, "Dim.2"]) - 
                                                          min(var[, "Dim.2"]))))
   ggplot() +
-    geom_point(data = ind, aes(x = Dim.1, y = Dim.2, fill = dataset$KG_p_group),
+    geom_point(data = ind, aes(x = Dim.1, y = Dim.2, fill = dataset),
                shape = 21, size = 7) +
     # scale factor based on fviz_pca_biplot function
     geom_segment(data = var, aes(x = 0, xend = Dim.1*r*0.7, y = 0, yend = Dim.2*r*0.7),
@@ -158,7 +158,8 @@ AfSIS_PCA_TOP$quali.sup$eta2
 dimdesc(AfSIS_PCA_TOP, proba = 0.1)
 
 #Plot PCA
-PCA_biplot_TOP <- PCA_biplot_fun(PCA_data = AfSIS_PCA_TOP, dataset = AfSIS_TOP) +
+PCA_biplot_TOP <- PCA_biplot_fun(PCA_data = AfSIS_PCA_TOP, 
+                                 dataset = AfSIS_TOP$KG_p_group) +
   scale_x_continuous("Dimension 1 (52.7%): Control on SOC content", 
                      limits = c(-4.6,4.5), breaks = seq(-4,4,2)) +
   scale_y_continuous("Dimension 2 (22.5%): Control on SOC age")
@@ -170,10 +171,50 @@ AfSIS_PCA_BOT$quali.sup
 AfSIS_PCA_BOT$quali.sup$eta2
 dimdesc(AfSIS_PCA_BOT, proba = 0.1)
 
-PCA_biplot_BOT <- PCA_biplot_fun(PCA_data = AfSIS_PCA_BOT, dataset = AfSIS_BOT) +
+PCA_biplot_BOT <- PCA_biplot_fun(PCA_data = AfSIS_PCA_BOT, 
+                                 dataset = AfSIS_TOP$KG_p_group) +
   scale_x_continuous("Dimension 1 (49.5%): Control on SOC content", 
                      limits = c(-4.6,4), breaks = seq(-4,4,2)) +
   scale_y_continuous("Dimension 2 (23.1%): Control on SOC age") 
+
+##Figure A7 and A8
+#Figure A7: Cultivation
+PCA_biplot_TOP_Cult <- PCA_biplot_fun(PCA_data = AfSIS_PCA_TOP, 
+                                     dataset = AfSIS_TOP$Cultivation) +
+  scale_x_continuous("Dimension 1 (52.7%): Control on SOC content", 
+                     limits = c(-4.6,4), breaks = seq(-4,4,2)) +
+  scale_y_continuous("Dimension 2 (22.5%): Control on SOC age") +
+  scale_fill_manual("Cultivation", values = c("", ""))
+
+PCA_biplot_BOT_Cult <- PCA_biplot_fun(PCA_data = AfSIS_PCA_BOT, 
+                                     dataset = AfSIS_TOP$Cultivation) +
+  scale_x_continuous("Dimension 1 (49.5%): Control on SOC content", 
+                     limits = c(-4.6,4), breaks = seq(-4,4,2)) +
+  scale_y_continuous("Dimension 2 (23.1%): Control on SOC age") +
+  scale_fill_manual("Cultivation", values = c("", ""))
+
+ggarrange(PCA_biplot_TOP_Cult, PCA_biplot_BOT_Cult, common.legend = TRUE,
+          labels = c("a) Topsoil", "b) Subsoil"), label.y = 1.02)
+ggsave("./Figures/AfSIS_14C_FigureA8.jpeg", width = 12, height = 8)
+
+#Figure A8: Erosion
+PCA_biplot_TOP_Ero <- PCA_biplot_fun(PCA_data = AfSIS_PCA_TOP, 
+                                     dataset = AfSIS_TOP$Erosion) +
+  scale_x_continuous("Dimension 1 (52.7%): Control on SOC content", 
+                     limits = c(-4.6,4), breaks = seq(-4,4,2)) +
+  scale_y_continuous("Dimension 2 (22.5%): Control on SOC age") +
+  scale_fill_manual("Erosion", values = c("", ""))
+
+PCA_biplot_BOT_Ero <- PCA_biplot_fun(PCA_data = AfSIS_PCA_BOT, 
+                                 dataset = AfSIS_TOP$Erosion) +
+  scale_x_continuous("Dimension 1 (49.5%): Control on SOC content", 
+                     limits = c(-4.6,4), breaks = seq(-4,4,2)) +
+  scale_y_continuous("Dimension 2 (23.1%): Control on SOC age")  +
+  scale_fill_manual("Erosion", values = c("", ""))
+
+ggarrange(PCA_biplot_TOP_Ero, PCA_biplot_BOT_Ero, common.legend = TRUE,
+          labels = c("a) Topsoil", "b) Subsoil"), label.y = 1.02)
+ggsave("./Figures/AfSIS_14C_FigureA8.jpeg", width = 12, height = 8)
 
 ###Scatterplot and violin plots: Mean C age ~ SOC colored by climate zones
 
