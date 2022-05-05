@@ -62,8 +62,11 @@ climate_names <- c("Arid" = "Arid\n",
                    "Tropical (seasonal)" = "Tropical\n(seasonal)",
                    "Tropical (humid)" = "Tropical\n(humid)")
 
-#Create color variable
+##Create color variables
+#Climate
 color_climate <- c("#ffffb2", "#c2a5cf", "#762a83", "#a6dba0", "#1b7837")
+#Erosion/Cultivation
+color_Ero_Cult <- c("#80cdc1", "#bf812d")
 
 #Create empty climate zone to display legend better
 AfSIS_14C$KG_p_group <- factor(AfSIS_14C$KG_p_group,
@@ -439,7 +442,7 @@ boxplot_14C <- AfSIS_14C %>%
                                             "plain", "plain")),
         axis.title = element_text(face = "bold")) +
   scale_x_discrete("", labels = c("Topsoil\n(0-20 cm)", "Subsoil\n(20-50 cm)")) +
-  scale_y_continuous("Mean C age [yr]", trans = reverselog_trans(10),
+  scale_y_continuous("Mean SOC age [yr]", trans = reverselog_trans(10),
                      breaks = c(100,182,300,563,1000,3000))
 
 boxplot_14C_diff <- AfSIS_14C %>% 
@@ -454,15 +457,89 @@ boxplot_14C_diff <- AfSIS_14C %>%
   theme_bw(base_size = 17) +
   theme_own +
   scale_x_discrete("", labels = climate_names) +
-  scale_y_continuous("Mean C age [yr]: Topsoil - Subsoil", limits = c(-5200,2000),
+  scale_y_continuous("Mean SOC age [yr]: Topsoil - Subsoil", limits = c(-5200,2000),
                      expand = c(0,0), breaks = seq(-5000,2000,1000)) +
-  scale_fill_viridis_c("GPP\n[kgC/m?yr]", limits = c(0,2.5), direction = -1) +
+  scale_fill_viridis_c("GPP\n[kgC/m²yr]", limits = c(0,2.5), direction = -1) +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2, title.vjust = 2))
 
 ggarrange(boxplot_14C, boxplot_14C_diff, widths = c(0.9,2.1))
 
-ggsave("./Figures/AfSIS_14C_Figure_A2.jpeg", width = 12, height = 6)
+ggsave("./Figures/AfSIS_14C_FigureA2.jpeg", width = 12, height = 6)
 
+###Figure A6
+##Mean C age erosion/cultivation
+#Only Topsoil data is shown which should have the strongest effect
+AfSIS_TOP_EroCult <- AfSIS_TOP %>% 
+  pivot_longer(cols = c(Erosion, Cultivation), values_to = "EroCult_val",
+               names_to = "EroCult_name")
+  
+boxplot_EroCult <- AfSIS_TOP_EroCult %>%
+  ggplot(aes(y = TurnoverTime, x = EroCult_name, color = EroCult_val)) +
+  facet_wrap(~Depth, scale = "free_y", labeller = as_labeller(depth_names)) +
+  geom_vline(xintercept = 1.5, linetype = "dashed") +
+  geom_boxplot(notch = TRUE, outlier.shape = NA) +
+  geom_jitter(position = position_jitterdodge(0.2),
+              shape = 21, size = 3) +
+  theme_bw(base_size = 18) +
+  theme_own + 
+  scale_y_continuous("Mean SOC age [yr]", trans = "reverse") +
+  scale_x_discrete("") +
+  scale_color_manual("Erosion/Cultivation", values = color_Ero_Cult)
+
+
+boxplot_Cult <- AfSIS_TOP_EroCult %>%
+  filter(EroCult_name == "Cultivation") %>% 
+  #only use sites that have at least 3 non-cultivated and 3 cultivated plots
+  filter(Site == "Analavory"|
+           Site == "Didy"|
+           Site == "Namasuba"|
+           Site == "Nyalagari"|
+           Site == "Dambidolo"|
+           Site == "Pampaida") %>% 
+  ggplot(aes(y = TurnoverTime, x = Site, color = EroCult_val)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(position = position_jitterdodge(0.2),
+              shape = 21, size = 3) +
+  facet_wrap(~EroCult_name) +
+  theme_bw(base_size = 18) +
+  theme_own +
+  scale_y_continuous("", trans = "reverse") +
+  scale_x_discrete("", labels = c("Analavory,\nMadagascar",
+                                  "Dambidolo,\nEthiopia",
+                                  "Didy,\nMadagascar",
+                                  "Namasuba,\nUganda",
+                                  "Nyalagari,\nNiger",
+                                  "Pampaida,\nNigeria")) +
+  scale_color_manual("Erosion/Cultivation", values = color_Ero_Cult)
+
+boxplot_Ero <- AfSIS_TOP_EroCult %>%
+  filter(EroCult_name == "Erosion") %>% 
+  #only use sites that have at least 3 non-eroded and 3 eroded plots
+  filter(Site == "Analavory"|
+           Site == "Namasuba"|
+           Site == "Hoima"|
+           Site == "Mucope"|
+           Site == "Didy") %>% 
+  ggplot(aes(y = TurnoverTime, x = Site, color = EroCult_val)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(position = position_jitterdodge(0.2),
+              shape = 21, size = 3) +
+  facet_wrap(~EroCult_name) +
+  theme_bw(base_size = 18) +
+  theme_own +
+  scale_y_continuous("", trans = "reverse") +
+  scale_x_discrete("", labels = c("Analavory,\nMadagascar",
+                                  "Didy,\nMadagascar",
+                                  "Hoima,\nUganda",
+                                  "Mucope,\nAngola",
+                                  "Namasuba,\nUganda")) +
+  scale_color_manual("Erosion/Cultivation", values = color_Ero_Cult)
+
+ggarrange(boxplot_EroCult, ggarrange(boxplot_Cult, boxplot_Ero, nrow = 2,
+                                     legend = "none"), 
+          common.legend = TRUE, widths = c(1,1.6))
+
+ggsave("./Figures/AfSIS_14C_FigureA6.jpeg", width = 12, height = 7)
 
 ##Tables
