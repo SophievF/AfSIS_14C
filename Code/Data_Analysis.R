@@ -195,7 +195,7 @@ PCA_biplot_BOT_Cult <- PCA_biplot_fun(PCA_data = AfSIS_PCA_BOT,
 
 ggarrange(PCA_biplot_TOP_Cult, PCA_biplot_BOT_Cult, common.legend = TRUE,
           labels = c("a) Topsoil", "b) Subsoil"), label.y = 1.02)
-ggsave("./Figures/AfSIS_14C_FigureA8.jpeg", width = 12, height = 8)
+ggsave("./Figures/AfSIS_14C_FigureA7.jpeg", width = 12, height = 8)
 
 #Figure A8: Erosion
 PCA_biplot_TOP_Ero <- PCA_biplot_fun(PCA_data = AfSIS_PCA_TOP, 
@@ -528,7 +528,6 @@ boxplot_EroCult <- AfSIS_TOP_EroCult %>%
   scale_x_discrete("") +
   scale_fill_manual("Erosion/Cultivation", values = color_Ero_Cult)
 
-
 boxplot_Cult <- AfSIS_TOP_EroCult %>%
   filter(EroCult_name == "Cultivation") %>% 
   #only use sites that have at least 3 non-cultivated and 3 cultivated plots
@@ -538,7 +537,7 @@ boxplot_Cult <- AfSIS_TOP_EroCult %>%
            Site == "Nyalagari"|
            Site == "Dambidolo"|
            Site == "Pampaida") %>% 
-  ggplot(aes(y = TurnoverTime, x = Site, color = EroCult_val)) +
+  ggplot(aes(y = TurnoverTime, x = Site, fill = EroCult_val)) +
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(position = position_jitterdodge(0.2),
               shape = 21, size = 3) +
@@ -552,7 +551,7 @@ boxplot_Cult <- AfSIS_TOP_EroCult %>%
                                   "Namasuba,\nUganda",
                                   "Nyalagari,\nNiger",
                                   "Pampaida,\nNigeria")) +
-  scale_color_manual("Erosion/Cultivation", values = color_Ero_Cult)
+  scale_fill_manual("Erosion/Cultivation", values = color_Ero_Cult)
 
 boxplot_Ero <- AfSIS_TOP_EroCult %>%
   filter(EroCult_name == "Erosion") %>% 
@@ -562,7 +561,7 @@ boxplot_Ero <- AfSIS_TOP_EroCult %>%
            Site == "Hoima"|
            Site == "Mucope"|
            Site == "Didy") %>% 
-  ggplot(aes(y = TurnoverTime, x = Site, color = EroCult_val)) +
+  ggplot(aes(y = TurnoverTime, x = Site, fill = EroCult_val)) +
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(position = position_jitterdodge(0.2),
               shape = 21, size = 3) +
@@ -575,7 +574,7 @@ boxplot_Ero <- AfSIS_TOP_EroCult %>%
                                   "Hoima,\nUganda",
                                   "Mucope,\nAngola",
                                   "Namasuba,\nUganda")) +
-  scale_color_manual("Erosion/Cultivation", values = color_Ero_Cult)
+  scale_fill_manual("Erosion/Cultivation", values = color_Ero_Cult)
 
 ggarrange(boxplot_EroCult, ggarrange(boxplot_Cult, boxplot_Ero, nrow = 2,
                                      legend = "none"), 
