@@ -582,4 +582,24 @@ ggarrange(boxplot_EroCult, ggarrange(boxplot_Cult, boxplot_Ero, nrow = 2,
 
 ggsave("./Figures/AfSIS_14C_FigureA6.jpeg", width = 12, height = 7)
 
-##Tables
+###Tables
+#Table A1: Summary main mineral groups
+AfSIS_14C %>% 
+  group_by(KG_p_group, Depth) %>% 
+  summarise(median_feldspars = median(Feldspars),
+            mad_feldspars = mad(Feldspars),
+            median_quartz = median(Quartz),
+            mad_quartz = mad(Quartz),
+            median_Clay_1_1 = median(Clay_1_1),
+            mad_Clay_1_1 = mad(Clay_1_1),
+            median_Clay_2_1 = median(Clay_2_1),
+            mad_Clay_2_1 = mad(Clay_2_1))
+
+#Table A2: Summary climate zones
+#Note that n is number of samples, divided by two equals number of profiles
+AfSIS_14C %>% 
+  count(KG_p_group, KG_p_code, KG_p_name)
+
+  
+
+
