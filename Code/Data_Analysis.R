@@ -66,7 +66,7 @@ climate_names <- c("Arid" = "Arid\n",
 #Climate
 color_climate <- c("#ffffb2", "#c2a5cf", "#762a83", "#a6dba0", "#1b7837")
 #Erosion/Cultivation
-color_Ero_Cult <- c("#80cdc1", "#bf812d")
+color_Ero_Cult <- c("#80cdc1", "#dfc27d")
 
 #Create empty climate zone to display legend better
 AfSIS_14C$KG_p_group <- factor(AfSIS_14C$KG_p_group,
@@ -184,14 +184,14 @@ PCA_biplot_TOP_Cult <- PCA_biplot_fun(PCA_data = AfSIS_PCA_TOP,
   scale_x_continuous("Dimension 1 (52.7%): Control on SOC content", 
                      limits = c(-4.6,4), breaks = seq(-4,4,2)) +
   scale_y_continuous("Dimension 2 (22.5%): Control on SOC age") +
-  scale_fill_manual("Cultivation", values = c("", ""))
+  scale_fill_manual("Cultivation", values = color_Ero_Cult)
 
 PCA_biplot_BOT_Cult <- PCA_biplot_fun(PCA_data = AfSIS_PCA_BOT, 
                                      dataset = AfSIS_TOP$Cultivation) +
   scale_x_continuous("Dimension 1 (49.5%): Control on SOC content", 
                      limits = c(-4.6,4), breaks = seq(-4,4,2)) +
   scale_y_continuous("Dimension 2 (23.1%): Control on SOC age") +
-  scale_fill_manual("Cultivation", values = c("", ""))
+  scale_fill_manual("Cultivation", values = color_Ero_Cult)
 
 ggarrange(PCA_biplot_TOP_Cult, PCA_biplot_BOT_Cult, common.legend = TRUE,
           labels = c("a) Topsoil", "b) Subsoil"), label.y = 1.02)
@@ -203,14 +203,14 @@ PCA_biplot_TOP_Ero <- PCA_biplot_fun(PCA_data = AfSIS_PCA_TOP,
   scale_x_continuous("Dimension 1 (52.7%): Control on SOC content", 
                      limits = c(-4.6,4), breaks = seq(-4,4,2)) +
   scale_y_continuous("Dimension 2 (22.5%): Control on SOC age") +
-  scale_fill_manual("Erosion", values = c("", ""))
+  scale_fill_manual("Erosion", values = color_Ero_Cult)
 
 PCA_biplot_BOT_Ero <- PCA_biplot_fun(PCA_data = AfSIS_PCA_BOT, 
                                  dataset = AfSIS_TOP$Erosion) +
   scale_x_continuous("Dimension 1 (49.5%): Control on SOC content", 
                      limits = c(-4.6,4), breaks = seq(-4,4,2)) +
   scale_y_continuous("Dimension 2 (23.1%): Control on SOC age")  +
-  scale_fill_manual("Erosion", values = c("", ""))
+  scale_fill_manual("Erosion", values = color_Ero_Cult)
 
 ggarrange(PCA_biplot_TOP_Ero, PCA_biplot_BOT_Ero, common.legend = TRUE,
           labels = c("a) Topsoil", "b) Subsoil"), label.y = 1.02)
@@ -516,7 +516,7 @@ AfSIS_TOP_EroCult <- AfSIS_TOP %>%
                names_to = "EroCult_name")
   
 boxplot_EroCult <- AfSIS_TOP_EroCult %>%
-  ggplot(aes(y = TurnoverTime, x = EroCult_name, color = EroCult_val)) +
+  ggplot(aes(y = TurnoverTime, x = EroCult_name, fill = EroCult_val)) +
   facet_wrap(~Depth, scale = "free_y", labeller = as_labeller(depth_names)) +
   geom_vline(xintercept = 1.5, linetype = "dashed") +
   geom_boxplot(notch = TRUE, outlier.shape = NA) +
@@ -526,7 +526,7 @@ boxplot_EroCult <- AfSIS_TOP_EroCult %>%
   theme_own + 
   scale_y_continuous("Mean SOC age [yr]", trans = "reverse") +
   scale_x_discrete("") +
-  scale_color_manual("Erosion/Cultivation", values = color_Ero_Cult)
+  scale_fill_manual("Erosion/Cultivation", values = color_Ero_Cult)
 
 
 boxplot_Cult <- AfSIS_TOP_EroCult %>%
