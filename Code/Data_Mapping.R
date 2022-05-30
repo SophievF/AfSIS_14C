@@ -531,7 +531,7 @@ KG_p_area %>%
   scale_y_continuous("Area-weighted SOC content", expand = c(0,0), 
                      limits = c(0,0.9), breaks = seq(0,0.8,0.2)) +
   scale_x_discrete("", 
-                   labels = c("Arid", "Temperate\n(seasonal)", "Tropical\n(humid)",
+                   labels = c("Arid", "Temperate\n(seasonal)", "Tropical\n(seasonal)",
                               "Temperate\n(humid)", "Tropical\n(humid)")) +
   scale_fill_manual("", values = c("#ffffb2",
                                    "#c2a5cf", "#762a83", 
