@@ -128,19 +128,19 @@ PCA_biplot_fun <- function(PCA_data, dataset, sub.variable){
                                                          min(var[, "Dim.2"]))))
   ggplot() +
     geom_point(data = ind, aes(x = Dim.1, y = Dim.2, fill = dataset),
-               shape = 21, size = 7) +
+               shape = 21, size = 6) +
     # scale factor based on fviz_pca_biplot function
     geom_segment(data = var, aes(x = 0, xend = Dim.1*r*0.7, y = 0, yend = Dim.2*r*0.7),
-                 size = 1, arrow = arrow(length = unit(0.02, "npc"))) +
+                 size = 1.5, arrow = arrow(length = unit(0.02, "npc"))) +
     geom_label(data = var, aes(x = Dim.1*r*0.75, y = Dim.2*r*0.75, label = name),
-               size = 5.5, fontface = "bold", fill = "white", alpha = 0.7,
+               size = 5, fontface = "bold", fill = "white", alpha = 0.7,
                label.size = NA, label.padding = unit(0.1, "lines")) +
     geom_segment(data = quanti.sup, aes(x = 0, xend = Dim.1*r*0.7, y = 0, yend = Dim.2*r*0.7),
-                 size = 1, arrow = arrow(length = unit(0.02, "npc")),
-                 color = "blue") +
-    geom_label(data = quanti.sup, aes(x = Dim.1*r*0.75, y = Dim.2*r*0.75, label = "C age"),
-               size = 5.5, fontface = "bold", fill = "white", alpha = 0.7,
-               label.size = NA, label.padding = unit(0.1, "lines"), color = "blue") +
+                 size = 1.5, arrow = arrow(length = unit(0.02, "npc")),
+                 color = "red") +
+    geom_label(data = quanti.sup, aes(x = Dim.1*r*0.75, y = Dim.2*r*0.75, label = "SOC age"),
+               size = 5, fontface = "bold", fill = "white", alpha = 0.7,
+               label.size = NA, label.padding = unit(0.1, "lines"), color = "red") +
     geom_vline(xintercept = 0, linetype = "dashed") +
     geom_hline(yintercept = 0, linetype = "dashed") +
     theme_bw(base_size = 19) +
@@ -223,7 +223,7 @@ ggsave("./Figures/AfSIS_14C_FigureA8.jpeg", width = 12, height = 8)
 scatter_fun <- function(dataset){
   dataset %>% 
     ggplot(aes(x = CORG, y = TurnoverTime, fill = KG_p_group)) +
-    geom_point(size = 7, alpha = 0.8, shape = 21) +
+    geom_point(size = 6, alpha = 0.8, shape = 21) +
     theme_bw(base_size = 19) +
     theme_own +
     theme(legend.position = "top",
@@ -313,7 +313,7 @@ scatter_vio_BOT <- ggdraw() +
   draw_plot(vio_SOC_BOT, x = 0.56, y = 0.12, width = 0.4, height = 0.25)
 
 ##Arrange with PCA plot
-#recieve legend to plot it separately
+#receive legend to plot it separately
 legend <- cowplot::get_legend(scatter_TOP)
 
 #Topsoil - Figure 1
