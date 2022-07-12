@@ -229,9 +229,9 @@ scatter_fun <- function(dataset){
     theme(legend.position = "top",
           legend.text = element_text(size = 18),
           legend.title = element_text(size = 20)) +
-    scale_x_continuous("SOC [wt-%]", expand = c(0,0),
+    scale_x_continuous("Soil organic carbon [wt-%]", expand = c(0,0),
                        limits = c(0,8)) +
-    scale_y_continuous("Mean SOC age [yr]", trans = reverse_trans()) +
+    scale_y_continuous("Mean soil organic carbon age [yr]", trans = reverse_trans()) +
     scale_fill_manual("Climate zones:", drop = FALSE,
                       values = color_climate_2) +
     guides(fill = guide_legend(ncol = 3,
@@ -326,7 +326,7 @@ ggarrange(scatter_vio_BOT, PCA_biplot_BOT, ncol = 2, legend.grob = legend,
           labels = c("a)", "b)"), widths = c(1,1.2))
 ggsave("./Figures/AfSIS_14C_FigureA3.jpeg", width = 12, height = 8)
 
-###Figure 2 and A4
+###Figure 3 and A4
 ##Scatter plot: Mean C age ~ SOC colored by Mox, clay minerals, GPP
 #Mox
 Mox_14C_fun <- function(dataset){
@@ -370,7 +370,7 @@ Clay21_14C_fun <- function(dataset){
           legend.text = element_text(size = 14),
           legend.title = element_text(size = 16),
           legend.background = element_blank()) +
-    scale_y_continuous("Mean SOC age [yr]", trans = reverselog_trans(10)) +
+    scale_y_continuous("Mean soil organic carbon age [yr]", trans = reverselog_trans(10)) +
     scale_x_continuous(trans = "log10") +
     scale_fill_viridis_c("2:1 clay minerals\nin clay fraction [%]", 
                          trans = "log10", option = "magma", direction = -1,
@@ -401,8 +401,8 @@ GPP_14C_fun <- function(dataset){
           legend.text = element_text(size = 14),
           legend.title = element_text(size = 16)) +
     scale_y_continuous("", trans = reverselog_trans(10)) +
-    scale_x_continuous("SOC [wt-%]", trans = "log10") +
-    scale_fill_viridis_c("GPP\n[kgC/m?yr]", direction = -1, limits = c(0,2.5),
+    scale_x_continuous("Soil organic carbon [wt-%]", trans = "log10") +
+    scale_fill_viridis_c("GPP\n[kgC/m²yr]", direction = -1, limits = c(0,2.5),
                          breaks = c(0,1,2)) +
     guides(fill = guide_colorbar(barheight = 5, frame.colour = "black", 
                                  ticks.linewidth = 2))
@@ -416,7 +416,7 @@ ggarrange(Mox_14C_TOP, Clay21_14C_TOP, GPP_14C_TOP, nrow = 3,
           labels = c("a)", "b)", "c)"), label.x = 0.04, label.y = 1.04,
           heights = c(1.2,1,1.2))
 
-ggsave("./Figures/AfSIS_14C_Figure2.jpeg", width = 12, height = 7)
+ggsave("./Figures/AfSIS_14C_Figure3.jpeg", width = 12, height = 7)
 
 ggarrange(Mox_14C_BOT, Clay21_14C_BOT, GPP_14C_BOT, nrow = 3,
           labels = c("a)", "b)", "c)"), label.x = 0.04, label.y = 1.04,
@@ -424,7 +424,7 @@ ggarrange(Mox_14C_BOT, Clay21_14C_BOT, GPP_14C_BOT, nrow = 3,
 
 ggsave("./Figures/AfSIS_14C_FigureA4.jpeg", width = 12, height = 7)
 
-###Figure 3 and A5
+###Figure 4 and A5
 ##Mean C age ~ clay content colored by clay mineral type
 ClayType_14C_fun <- function(dataset){
   dataset %>% 
@@ -450,7 +450,7 @@ ClayType_14C_fun <- function(dataset){
     theme(strip.text = element_text(size = 16),
           panel.spacing.x = unit(1, "cm"),
           legend.title = element_text(size = 19)) +
-    scale_y_continuous("Mean SOC age [yr]", trans = reverselog_trans(10)) +
+    scale_y_continuous("Mean soil organic carbon age [yr]", trans = reverselog_trans(10)) +
     scale_x_continuous("Clay + fine silt fraction [%]", expand = c(0,0),
                        limits = c(0,100)) +
     scale_fill_viridis_c("Clay mineral\ncontent in clay\nfraction [%]", 
@@ -461,10 +461,10 @@ ClayType_14C_fun <- function(dataset){
 
 #Plot for topsoil and subsoil samples
 ClayType_14C_fun(dataset = AfSIS_TOP)
-ggsave("./AfSIS_14C_Figure3.jpeg", width = 11, height = 7)
+ggsave("./Figures/AfSIS_14C_Figure4.jpeg", width = 11, height = 7)
 
 ClayType_14C_fun(dataset = AfSIS_BOT)
-ggsave("AfSIS_14C_FigureA5.jpeg", width = 11, height = 7)
+ggsave("./Figures/AfSIS_14C_FigureA5.jpeg", width = 11, height = 7)
 
 ###Figure A2
 ##Mean C age by depth

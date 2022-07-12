@@ -474,7 +474,7 @@ KG_p_f_NA <- tm_shape(Africa_sp, projection = 4326) +
   tm_layout(main.title = "a) Predicted changes in climate zones", 
             title.size = 2) 
 tmap_save(tm = KG_p_f_NA, 
-          filename = "./Figures/AfSIS_14C_Figure4a.jpeg")
+          filename = "./Figures/AfSIS_14C_Figure5a.jpeg")
 
 ##Calculate Area-weighted SOC content
 KG_p_area <- as.data.frame(KG_p_africa_grouped) %>% 
@@ -538,4 +538,4 @@ KG_p_area %>%
                                    "#a6dba0", "#1b7837")) +
   guides(fill = "none") +
   labs(title = "b) Mean SOC content of current climate zones")
-ggsave("./Figures/AfSIS_14C_Figure4b.jpeg", width = 5.6, height = 2.5) 
+ggsave("./Figures/AfSIS_14C_Figure5b.jpeg", width = 5.6, height = 2.5) 
