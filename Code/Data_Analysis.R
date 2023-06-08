@@ -10,14 +10,31 @@ library(cowplot)
 library(FactoMineR)
 library(factoextra)
 library(bestNormalize)
+library(grid)
 
 #This script contains all the code to reproduce all data analysis and figures 
-#in the manuscript von Fromm et al. (2022)
+#in the manuscript von Fromm et al. (2023)
 
 #Load dataset
 AfSIS_14C <- read_csv("./Data/AfSIS_data_all.csv") %>% 
-  dplyr::rename(Cultivation = PlotCultMgd)
-
+  dplyr::rename(Cultivation = PlotCultMgd) %>% 
+  mutate(ClimateGroups = case_when(
+    grepl("seasonal", KG_p_group) ~ "seasonal",
+    grepl("humid", KG_p_group) ~ "humid",
+    TRUE ~ "arid"
+  )) %>% 
+  mutate(Clay_Minerals = case_when(
+    Clay_2_1 > 0 ~ "2:1 clay minerals",
+    Clay_1_1 > 0 &
+      Clay_2_1 == 0 ~ "1:1 clay minerals only"
+  )) %>% 
+  #drop samples that don't have any clay minerals
+  drop_na(Clay_Minerals) %>% 
+  #create mineral groups for faceting
+  mutate(Clay_Minerals_Content = case_when(
+    Clay_Minerals == "2:1 clay minerals" ~ Clay_2_1,
+    Clay_Minerals == "1:1 clay minerals only" ~ Clay_1_1
+  ))
 
 AfSIS_14C$KG_p_group <- factor(AfSIS_14C$KG_p_group,
                                levels = c("Arid", 
@@ -80,33 +97,70 @@ AfSIS_14C$KG_p_group <- factor(AfSIS_14C$KG_p_group,
 color_climate_2 <- c("#ffffb2", "white", "#c2a5cf", "#762a83", "#a6dba0", 
                      "#1b7837")
 
-###Figure 1 and A3
-
-##Principial component analysis
-#Code inspired by:
-#http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/112-pca-principal-component-analysis-essentials/
-#https://www.youtube.com/watch?v=Uhw-1NilmAk&list=PLnZgp6epRBbTsZEFXi_p6W48HhNyqwxIu&index=11
-
 AfSIS_TOP <- AfSIS_14C %>%
   filter(Depth == "Topsoil")
 
 AfSIS_BOT <- AfSIS_14C %>%
   filter(Depth == "Subsoil")
 
+###Data distribution
+AfSIS_14C %>% 
+  skimr::skim_without_charts(CORG, TurnoverTime)
+
+AfSIS_14C %>% 
+  group_by(KG_p_group) %>% 
+  mutate(AI = PET/MAP) %>% 
+  skimr::skim_without_charts(MAP, PET, MAT, AI)
+
+AfSIS_14C %>% 
+  group_by(KG_p_group, Depth) %>%
+  mutate(OM = CORG * 1.724) %>%
+  summarise(Feld_median = median(Feldspars),
+            Feld_mad = mad(Feldspars),
+            Mox_median = median(Mox),
+            Mox_mad = mad(Mox),
+            Clay_21_median = median(Clay_2_1),
+            Clay_21_mad = mad(Clay_2_1),
+            Clay_11_median = median(Clay_1_1),
+            Clay_11_mad = mad(Clay_1_1),
+            PedOx_median = median(Pedogenic_Oxides),
+            PedOx_mad = mad(Pedogenic_Oxides),
+            Quartz_median = median(Quartz),
+            Quartz_mad = mad(Quartz))
+
+AfSIS_14C %>% 
+  mutate(ClimateGroups = case_when(
+    grepl("seasonal", KG_p_group) ~ "seasonal",
+    grepl("humid", KG_p_group) ~ "humid",
+    TRUE ~ "arid"
+  )) %>% 
+  group_by(ClimateGroups, Depth) %>% 
+  summarise(median_TT = median(TurnoverTime),
+            mad_TT = mad(TurnoverTime))
+
+###Figure 2 and A6
+
+##Principial component analysis
+#Code inspired by:
+#http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/112-pca-principal-component-analysis-essentials/
+#https://www.youtube.com/watch?v=Uhw-1NilmAk&list=PLnZgp6epRBbTsZEFXi_p6W48HhNyqwxIu&index=11
+
 ##PCA analysis
 #Function to create PCA
 AfSIS_PCA_fun <- function(dataset){
   dataset %>% 
-    dplyr::select(CORG, GPP, Clay_2_1, Clay_1_1, Clay_8um, Mox, Quartz,
-                  TurnoverTime, KG_p_group, Cultivation, Erosion) %>% 
+    dplyr::select(CORG, GPP, Clay_2_1, Clay_1_1, Clay_8um, Mox, 
+                  Pedogenic_Oxides, Quartz, Feldspars, TurnoverTime, 
+                  KG_p_group, Cultivation, Erosion) %>% 
     rename("C age" = TurnoverTime,
            "2:1 clays" = Clay_2_1,
            "C content" = CORG,
            "1:1 clays" = Clay_1_1,
            "Clay fraction" = Clay_8um,
-           PCM = Mox) %>% 
+           PCM = Mox,
+           POX = "Pedogenic_Oxides") %>% 
     mutate_if(is.numeric, ~predict(bestNormalize::bestNormalize(.x))) %>% 
-    PCA(graph = FALSE, scale.unit = FALSE, quali.sup = c(9:11), quanti.sup = 8)
+    PCA(graph = FALSE, scale.unit = FALSE, quali.sup = c(11:13), quanti.sup = 10)
 }
 
 #run function for both depths
@@ -155,66 +209,66 @@ AfSIS_PCA_TOP$eig
 #Extract information about qualitative variables (climate, erosion, cultivation)
 AfSIS_PCA_TOP$quali.sup
 AfSIS_PCA_TOP$quali.sup$eta2
-dimdesc(AfSIS_PCA_TOP, proba = 0.1)
+dimdesc(AfSIS_PCA_TOP, proba = 0.5)
 
 #Plot PCA
 PCA_biplot_TOP <- PCA_biplot_fun(PCA_data = AfSIS_PCA_TOP, 
                                  dataset = AfSIS_TOP$KG_p_group) +
-  scale_x_continuous("Dimension 1 (52.7%): Control on SOC content", 
-                     limits = c(-4.6,4.5), breaks = seq(-4,4,2)) +
-  scale_y_continuous("Dimension 2 (22.5%): Control on SOC age")
+  scale_x_continuous("Dimension 1 (48%): Control on SOC content", 
+                     limits = c(-5.2,4.5), breaks = seq(-4,4,2)) +
+  scale_y_continuous("Dimension 2 (24%): Control on SOC age")
   
 
 ##Subsoil results
 AfSIS_PCA_BOT$eig
 AfSIS_PCA_BOT$quali.sup
 AfSIS_PCA_BOT$quali.sup$eta2
-dimdesc(AfSIS_PCA_BOT, proba = 0.1)
+dimdesc(AfSIS_PCA_BOT, proba = 0.5)
 
 PCA_biplot_BOT <- PCA_biplot_fun(PCA_data = AfSIS_PCA_BOT, 
-                                 dataset = AfSIS_TOP$KG_p_group) +
-  scale_x_continuous("Dimension 1 (49.5%): Control on SOC content", 
-                     limits = c(-4.6,4), breaks = seq(-4,4,2)) +
-  scale_y_continuous("Dimension 2 (23.1%): Control on SOC age") 
+                                 dataset = AfSIS_BOT$KG_p_group) +
+  scale_x_continuous("Dimension 1 (47%): Control on SOC content", 
+                     limits = c(-5,4), breaks = seq(-4,4,2)) +
+  scale_y_continuous("Dimension 2 (24%): Control on SOC age") 
 
-##Figure A7 and A8
-#Figure A7: Cultivation
+##Figure A10 and A11
+#Figure A10: Cultivation
 PCA_biplot_TOP_Cult <- PCA_biplot_fun(PCA_data = AfSIS_PCA_TOP, 
                                      dataset = AfSIS_TOP$Cultivation) +
-  scale_x_continuous("Dimension 1 (52.7%): Control on SOC content", 
-                     limits = c(-4.6,4), breaks = seq(-4,4,2)) +
-  scale_y_continuous("Dimension 2 (22.5%): Control on SOC age") +
+  scale_x_continuous("Dimension 1 (48%): Control on SOC content", 
+                     limits = c(-5.2,4), breaks = seq(-4,4,2)) +
+  scale_y_continuous("Dimension 2 (24%): Control on SOC age") +
   scale_fill_manual("Cultivation", values = color_Ero_Cult)
 
 PCA_biplot_BOT_Cult <- PCA_biplot_fun(PCA_data = AfSIS_PCA_BOT, 
-                                     dataset = AfSIS_TOP$Cultivation) +
-  scale_x_continuous("Dimension 1 (49.5%): Control on SOC content", 
-                     limits = c(-4.6,4), breaks = seq(-4,4,2)) +
-  scale_y_continuous("Dimension 2 (23.1%): Control on SOC age") +
+                                     dataset = AfSIS_BOT$Cultivation) +
+  scale_x_continuous("Dimension 1 (47%): Control on SOC content", 
+                     limits = c(-5,4), breaks = seq(-4,4,2)) +
+  scale_y_continuous("Dimension 2 (24%): Control on SOC age") +
   scale_fill_manual("Cultivation", values = color_Ero_Cult)
 
 ggarrange(PCA_biplot_TOP_Cult, PCA_biplot_BOT_Cult, common.legend = TRUE,
-          labels = c("a) Topsoil", "b) Subsoil"), label.y = 1.02)
-ggsave("./Figures/AfSIS_14C_FigureA7.jpeg", width = 12, height = 8)
+          labels = c("a) Topsoil", "b) Subsoil"), label.y = 1.02, nrow = 2)
+ggsave("./Figures/AfSIS_14C_FigureA10.jpeg", width = 10, height = 13)
 
-#Figure A8: Erosion
+# Figure A11: Erosion
 PCA_biplot_TOP_Ero <- PCA_biplot_fun(PCA_data = AfSIS_PCA_TOP, 
                                      dataset = AfSIS_TOP$Erosion) +
-  scale_x_continuous("Dimension 1 (52.7%): Control on SOC content", 
-                     limits = c(-4.6,4), breaks = seq(-4,4,2)) +
-  scale_y_continuous("Dimension 2 (22.5%): Control on SOC age") +
+  scale_x_continuous("Dimension 1 (48%): Control on SOC content", 
+                     limits = c(-5.2,4), breaks = seq(-4,4,2)) +
+  scale_y_continuous("Dimension 2 (24%): Control on SOC age") +
   scale_fill_manual("Erosion", values = color_Ero_Cult)
 
 PCA_biplot_BOT_Ero <- PCA_biplot_fun(PCA_data = AfSIS_PCA_BOT, 
-                                 dataset = AfSIS_TOP$Erosion) +
-  scale_x_continuous("Dimension 1 (49.5%): Control on SOC content", 
-                     limits = c(-4.6,4), breaks = seq(-4,4,2)) +
-  scale_y_continuous("Dimension 2 (23.1%): Control on SOC age")  +
+                                 dataset = AfSIS_BOT$Erosion) +
+  scale_x_continuous("Dimension 1 (47%): Control on SOC content", 
+                     limits = c(-5,4), breaks = seq(-4,4,2)) +
+  scale_y_continuous("Dimension 2 (24%): Control on SOC age")  +
   scale_fill_manual("Erosion", values = color_Ero_Cult)
 
 ggarrange(PCA_biplot_TOP_Ero, PCA_biplot_BOT_Ero, common.legend = TRUE,
-          labels = c("a) Topsoil", "b) Subsoil"), label.y = 1.02)
-ggsave("./Figures/AfSIS_14C_FigureA8.jpeg", width = 12, height = 8)
+          labels = c("a) Topsoil", "b) Subsoil"), label.y = 1.02, nrow = 2)
+ggsave("./Figures/AfSIS_14C_FigureA11.jpeg", width = 10, height = 12)
 
 ###Scatterplot and violin plots: Mean C age ~ SOC colored by climate zones
 
@@ -303,7 +357,7 @@ scatter_vio_TOP <- ggdraw() +
   draw_plot(scatter_TOP +
               theme(legend.position = "none")) +
   draw_plot(vio_Cage_TOP, x = 0.5, y = 0.36, width = 0.45, height = 0.28) +
-  draw_plot(vio_SOC_TOP, x = 0.56, y = 0.12, width = 0.4, height = 0.25)
+  draw_plot(vio_SOC_TOP, x = 0.55, y = 0.12, width = 0.4, height = 0.25)
 
 #Subsoil
 scatter_vio_BOT <- ggdraw() +
@@ -319,14 +373,14 @@ legend <- cowplot::get_legend(scatter_TOP)
 #Topsoil - Figure 1
 ggarrange(scatter_vio_TOP, PCA_biplot_TOP, ncol = 2, legend.grob = legend,
           labels = c("a)", "b)"), widths = c(1,1.2))
-ggsave("./Figures/AfSIS_14C_Figure1.jpeg", width = 12, height = 8)
+ggsave("./Figures/AfSIS_14C_Figure2.svg", width = 12, height = 8)
 
-#Subsoil - Figure A3
+#Subsoil - Figure A6
 ggarrange(scatter_vio_BOT, PCA_biplot_BOT, ncol = 2, legend.grob = legend,
           labels = c("a)", "b)"), widths = c(1,1.2))
-ggsave("./Figures/AfSIS_14C_FigureA3.jpeg", width = 12, height = 8)
+ggsave("./Figures/AfSIS_14C_FigureA6.jpeg", width = 12, height = 8)
 
-###Figure 3 and A4
+###Figure 3 and A7
 ##Scatter plot: Mean C age ~ SOC colored by Mox, clay minerals, GPP
 #Mox
 Mox_14C_fun <- function(dataset){
@@ -358,7 +412,7 @@ Mox_14C_BOT <- Mox_14C_fun(dataset = AfSIS_BOT)
 Clay21_14C_fun <- function(dataset){
   dataset %>% 
     ggplot(aes(y = TurnoverTime, x = CORG,
-               fill = Clay_2_1*Clay_8um/100, color = "")) +
+               fill = Clay_2_1, color = "")) +
     geom_point(size = 5, shape = 21) +
     facet_wrap(~KG_p_group, nrow = 1) +
     theme_bw(base_size = 20) +
@@ -366,15 +420,15 @@ Clay21_14C_fun <- function(dataset){
     theme(axis.title = element_text(face = "bold"),
           strip.text = element_blank(),
           axis.title.x = element_blank(),
-          legend.margin = margin(t = -15, r = 10, b = -20, l = 0, unit = "pt"),
+          legend.margin = margin(t = -15, r = 50, b = -20, l = 0, unit = "pt"),
           legend.text = element_text(size = 14),
           legend.title = element_text(size = 16),
           legend.background = element_blank()) +
     scale_y_continuous("Mean soil organic carbon age [yr]", trans = reverselog_trans(10)) +
     scale_x_continuous(trans = "log10") +
-    scale_fill_viridis_c("2:1 clay minerals\nin clay fraction [%]", 
+    scale_fill_viridis_c("2:1 clay\nminerals [%]", 
                          trans = "log10", option = "magma", direction = -1,
-                         na.value = "grey80", breaks = c(0.3,3.0,30)) +
+                         na.value = "grey80") +
     scale_color_manual(values = "black", labels = "0") +
     guides(fill = guide_colorbar(barheight = 5, frame.colour = "black", 
                                  ticks.linewidth = 2, order = 1),
@@ -422,49 +476,94 @@ ggarrange(Mox_14C_BOT, Clay21_14C_BOT, GPP_14C_BOT, nrow = 3,
           labels = c("a)", "b)", "c)"), label.x = 0.04, label.y = 1.04,
           heights = c(1.2,1,1.2))
 
-ggsave("./Figures/AfSIS_14C_FigureA4.jpeg", width = 12, height = 7)
+ggsave("./Figures/AfSIS_14C_FigureA7.jpeg", width = 12, height = 7)
 
-###Figure 4 and A5
+###Figure 4 and A8
 ##Mean C age ~ clay content colored by clay mineral type
 ClayType_14C_fun <- function(dataset){
-  dataset %>% 
-    mutate(Clay_Minerals = case_when(
-      Clay_2_1*Clay_8um/100 > 0 ~ "2:1 clay minerals",
-      Clay_1_1*Clay_8um/100 > 0 &
-        Clay_2_1*Clay_8um/100 == 0 ~ "1:1 clay minerals only"
-    )) %>% 
-    #drop samples that don't have any clay minerls
-    drop_na(Clay_Minerals) %>% 
-    #create mineral groups for faceting
-    mutate(Clay_Minerals_Content = case_when(
-      Clay_Minerals == "2:1 clay minerals" ~ Clay_2_1*Clay_8um/100,
-      Clay_Minerals == "1:1 clay minerals only" ~ Clay_1_1*Clay_8um/100
-    )) %>% 
-    #exclude arid samples
-    filter(KG_p_group != "Arid") %>% 
-    ggplot(aes(y = TurnoverTime, x = Clay_8um, fill = Clay_Minerals_Content)) +
-    geom_point(size = 7, shape = 21) +
+  dataset  %>% 
+    ggplot(aes(y = TurnoverTime, x = Clay_8um, fill = Clay_Minerals_Content,
+               shape = ClimateGroups, size = CORG)) +
+    geom_point() +
     facet_wrap(~Clay_Minerals) +
-    theme_bw(base_size = 21) +
+    theme_bw(base_size = 16) +
     theme_own +
-    theme(strip.text = element_text(size = 16),
+    theme(strip.text = element_text(size = 12),
           panel.spacing.x = unit(1, "cm"),
-          legend.title = element_text(size = 19)) +
+          legend.title = element_text(size = 14),
+          legend.position = "top",
+          legend.margin = margin(t = 0, r = 0, b = 0, l = 0),
+          plot.margin = margin(t = 10, r = 0, l = 5, b = 5)) +
     scale_y_continuous("Mean soil organic carbon age [yr]", trans = reverselog_trans(10)) +
     scale_x_continuous("Clay + fine silt fraction [%]", expand = c(0,0),
                        limits = c(0,100)) +
-    scale_fill_viridis_c("Clay mineral\ncontent in clay\nfraction [%]", 
+    scale_fill_viridis_c("Clay mineral content [%]", 
                          option = "magma", trans = "log10", direction = -1) +
-    guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
-                                 ticks.linewidth = 2, title.vjust = 2))
+    scale_shape_manual("Climate zones", values = c(21,22,24)) +
+    scale_size_continuous("SOC [wt-%]", breaks = seq(1,6,2)) +
+    guides(fill = guide_colorbar(barheight = 1.1, frame.colour = "black", 
+                                 ticks.linewidth = 2, title.vjust = 0.9,
+                                 barwidth = 10),
+           shape = guide_legend(order = 1, override.aes = list(size = 3)))
 }
 
 #Plot for topsoil and subsoil samples
-ClayType_14C_fun(dataset = AfSIS_TOP)
-ggsave("./Figures/AfSIS_14C_Figure4.jpeg", width = 11, height = 7)
+ClayType_TOP <- ClayType_14C_fun(dataset = AfSIS_TOP)
+# ggsave("./Figures/AfSIS_14C_Figure4_2.jpeg", width = 13, height = 7)
 
-ClayType_14C_fun(dataset = AfSIS_BOT)
-ggsave("./Figures/AfSIS_14C_FigureA5.jpeg", width = 11, height = 7)
+g_top <- ggplot_gtable(ggplot_build(ClayType_TOP))
+strip_top <- which(grepl('strip-t', g_top$layout$name))
+fills <- c("#fc9272", "#9ecae1")
+k <- 1
+for(i in strip_top){
+  j <- which(grepl('rect', g_top$grobs[[i]]$grobs[[1]]$childrenOrder))
+  g_top$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- fills[k]
+  k <- 1 +k
+}
+
+ClayType_BOT <- ClayType_14C_fun(dataset = AfSIS_BOT)
+# ggsave("./Figures/AfSIS_14C_FigureA5.jpeg", width = 11, height = 7)
+g_bot <- ggplot_gtable(ggplot_build(ClayType_BOT))
+k <- 1
+for(i in strip_top){
+  j <- which(grepl('rect', g_bot$grobs[[i]]$grobs[[1]]$childrenOrder))
+  g_bot$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- fills[k]
+  k <- 1 +k
+}
+
+ClayType_box_fun <- function(dataset){
+  dataset %>% 
+    ggplot() +
+    geom_boxplot(aes(fill = Clay_Minerals, y = TurnoverTime, x = KG_p_group)) +
+    theme_bw(base_size = 16) +
+    theme_own +
+    theme(strip.text = element_text(size = 12),
+          panel.spacing.x = unit(1, "cm"),
+          legend.title = element_text(size = 14),
+          axis.title = element_blank(),
+          legend.position = c(0.72,0.1),
+          legend.margin = margin(t = 0, r = 0, b = 0, l = 0),
+          plot.margin = margin(t = 66, r = 10, l = 5, b = 44)) +
+    scale_y_continuous("Mean soil organic carbon age [yr]", 
+                       trans = reverselog_trans(10)) +
+    scale_x_discrete("", labels = c("arid", "temperate",
+                                    "tropical",
+                                    "temperate",
+                                    "tropical"),
+                     position = "top") +
+    scale_fill_manual("Type of clay minerals", values = c("#fc9272", "#9ecae1"))
+}
+
+Clay_TOP_box <- ClayType_box_fun(AfSIS_TOP)
+
+ggarrange(g_top, Clay_TOP_box, widths = c(1.9,1))
+
+ggsave("./Figures/AfSIS_14C_Figure4.jpeg", width = 13, height = 7)
+
+Clay_BOT_box <- ClayType_box_fun(AfSIS_BOT)
+ggarrange(g_bot, Clay_BOT_box, widths = c(1.9,1))
+
+ggsave("./Figures/AfSIS_14C_FigureA8.jpeg", width = 13, height = 7)
 
 ###Figure A2
 ##Mean C age by depth
@@ -508,7 +607,7 @@ ggarrange(boxplot_14C, boxplot_14C_diff, widths = c(0.9,2.1))
 
 ggsave("./Figures/AfSIS_14C_FigureA2.jpeg", width = 12, height = 6)
 
-###Figure A6
+###Figure A9
 ##Mean C age erosion/cultivation
 #Only Topsoil data is shown which should have the strongest effect
 AfSIS_TOP_EroCult <- AfSIS_TOP %>% 
@@ -580,25 +679,8 @@ ggarrange(boxplot_EroCult, ggarrange(boxplot_Cult, boxplot_Ero, nrow = 2,
                                      legend = "none"), 
           common.legend = TRUE, widths = c(1,1.6))
 
-ggsave("./Figures/AfSIS_14C_FigureA6.jpeg", width = 12, height = 7)
+ggsave("./Figures/AfSIS_14C_FigureA9.jpeg", width = 12, height = 7)
 
-###Tables
-#Table A1: Summary main mineral groups
-AfSIS_14C %>% 
-  group_by(KG_p_group, Depth) %>% 
-  summarise(median_feldspars = median(Feldspars),
-            mad_feldspars = mad(Feldspars),
-            median_quartz = median(Quartz),
-            mad_quartz = mad(Quartz),
-            median_Clay_1_1 = median(Clay_1_1),
-            mad_Clay_1_1 = mad(Clay_1_1),
-            median_Clay_2_1 = median(Clay_2_1),
-            mad_Clay_2_1 = mad(Clay_2_1))
-
-#Table A2: Summary climate zones
-#Note that n is number of samples, divided by two equals number of profiles
-AfSIS_14C %>% 
-  count(KG_p_group, KG_p_code, KG_p_name)
 
   
 
