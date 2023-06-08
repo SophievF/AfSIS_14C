@@ -60,7 +60,7 @@ AfSIS_data <- AfSIS_all %>%
   mutate(Clay_1_1 = Kaolinite + Dickite + Halloysite,
          Clay_2_1 = `Smectite (ML)` + `Smectite (Di)` + Illite + Vermiculite ,
          Amorphous = Glass + Ferrihydrite,
-         Fehydroxide = Goethite + Hematite,
+         Pedogenic_Oxides = Goethite + Hematite + Maghemite + Magnetite + Gibbsite,
          Feldspars = `K-feldspar` + Plagioclase) %>%
   ungroup() %>% 
   # remove other minerals
@@ -95,5 +95,3 @@ AfSIS_data <- AfSIS_data %>%
 
 write.csv(AfSIS_data, row.names = FALSE,
           "./Data/AfSIS_data_all.csv")
-
-

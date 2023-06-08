@@ -4,6 +4,8 @@
 
 library(tidyverse)
 library(raster)
+library(tmap)
+library(sf)
 
 # KG data is from Beck et al. 2018
 # https://doi.org/10.1038/sdata.2018.214
@@ -27,69 +29,29 @@ KG_f_raster <- raster::raster(KG_f_dir)
 KG_f <- raster::extract(KG_f_raster, cbind(AfSIS_LongLat$Longitude,
                                            AfSIS_LongLat$Latitude))
 
+# Load KG legend
+KG_legend <- read_csv("./Data/ClimateZones/KG_present_legend.csv")
+
+KG_p_legend <- KG_legend %>% 
+  rename(KG_p = pro_KG_present,
+         KG_p_code = pro_KG_present_short,
+         KG_p_name = pro_KG_present_long)
+
+KG_f_legend <- KG_legend %>% 
+  rename(KG_f = pro_KG_present,
+         KG_f_code = pro_KG_present_short,
+         KG_f_name = pro_KG_present_long)
+
+KG_p <- data.frame(KG_p) %>% 
+  left_join(KG_p_legend)
+
+KG_f <- data.frame(KG_f) %>% 
+  left_join(KG_f_legend)
+
 #Merge all three data sets
 AfSIS_14C_KG <- cbind(AfSIS_LongLat, KG_p, KG_f) %>% 
-  tibble()
-
-#Check which climate zones are present in africa
-AfSIS_14C_KG %>% 
-  group_by(KG_p) %>% 
-  count()
-
-AfSIS_14C_KG %>% 
-  group_by(KG_f) %>% 
-  count()
-
-#Convert numbers in actual climate zones based on legend.txt
-#Create new group (KG_p/f_group) that summarizes main climate zones
-AfSIS_14C_KG <- AfSIS_14C_KG %>% 
-  mutate(KG_p_code = case_when(
-    KG_p == 1 ~ "Af",
-    KG_p == 2 ~ "Am",
-    KG_p == 3 ~ "Aw",
-    KG_p == 4 ~ "BWh",
-    KG_p == 6 ~ "BSh",
-    KG_p == 7 ~ "BSk",
-    KG_p == 9 ~ "Csb",
-    KG_p == 11 ~ "Cwa",
-    KG_p == 12 ~ "Cwb",
-    KG_p == 14 ~ "Cfa",
-    KG_p == 15 ~ "Cfb"
-  ),
-  KG_f_code = case_when(
-    KG_f == 1 ~ "Af",
-    KG_f == 2 ~ "Am",
-    KG_f == 3 ~ "Aw",
-    KG_f == 4 ~ "BWh",
-    KG_f == 6 ~ "BSh",
-    KG_f == 11 ~ "Cwa",
-    KG_f == 12 ~ "Cwb",
-    KG_f == 15 ~ "Cfb"
-  ),
-  KG_p_name = case_when(
-    KG_p == 1 ~ "Tropical, rainforest",
-    KG_p == 2 ~ "Tropical, monsoon",
-    KG_p == 3 ~ "Tropical, savannah",
-    KG_p == 4 ~ "Arid, desert, hot",
-    KG_p == 6 ~ "Arid, steppe, hot",
-    KG_p == 7 ~ "Arid, steppe, cold",
-    KG_p == 9 ~ "Temperate, dry summer, warm summer",
-    KG_p == 11 ~ "Temperate, dry winter, hot summer",
-    KG_p == 12 ~ "Temperate, dry winter, warm summer",
-    KG_p == 14 ~ "Temperate, no dry season, hot summer",
-    KG_p == 15 ~ "Temperate, no dry season, warm summer"
-  ),
-  KG_f_name = case_when(
-    KG_f == 1 ~ "Tropical, rainforest",
-    KG_f == 2 ~ "Tropical, monsoon",
-    KG_f == 3 ~ "Tropical, savannah",
-    KG_f == 4 ~ "Arid, desert, hot",
-    KG_f == 6 ~ "Arid, steppe, hot",
-    KG_f == 11 ~ "Temperate, dry winter, hot summer",
-    KG_f == 12 ~ "Temperate, dry winter, warm summer",
-    KG_f == 15 ~ "Temperate, no dry season, warm summer"
-  ),
-  KG_p_group = case_when(
+  tibble() %>% 
+  mutate(KG_p_group = case_when(
     KG_p == 1 ~ "Tropical (humid)",
     KG_p == 2 ~ "Tropical (humid)",
     KG_p == 3 ~ "Tropical (seasonal)",
@@ -114,5 +76,157 @@ AfSIS_14C_KG <- AfSIS_14C_KG %>%
   )) %>% 
   dplyr::select(-KG_p, -KG_f)
 
-write.csv(AfSIS_14C_KG, row.names = FALSE,
+#Check which climate zones are present in africa
+AfSIS_14C_KG %>% 
+  group_by(KG_p_group, KG_p_code, KG_p_name) %>% 
+  count()
+
+AfSIS_14C_KG %>% 
+  group_by(KG_f_group, KG_f_code, KG_f_name) %>% 
+  count()
+
+## Which Climate Zones are present across SSA
+data("World")
+africa_map <- World %>%
+  st_transform(4326) %>% 
+  dplyr::filter(continent == "Africa")
+
+# Sub-Saharan Africa (based on definition of the United Nations geoscheme for Africa)
+ssa <- africa_map %>% 
+  filter(name != "Algeria",
+         name != "Egypt",
+         name != "Libya",
+         name != "W. Sahara",
+         name != "Tunisia",
+         name != "Morocco",
+         name != "Djibouti",
+         name != "Sudan") 
+
+ssa_sp <- ssa %>% 
+  as("Spatial")
+
+# Crop climate data to boundaries for SSA
+KG_p_crop <- raster::crop(KG_p_raster, ssa_sp)
+KG_p_africa <- raster::mask(KG_p_crop, ssa_sp)
+
+KG_p_africa_sum <- KG_p_africa %>% 
+  as.data.frame() %>% 
+  rename(KG_p = Beck_KG_V1_present_0p0083) %>% 
+  left_join(KG_p_legend) %>% 
+  drop_na() %>% 
+  count(KG_p, KG_p_code, KG_p_name) %>% 
+  mutate(n_rel = n/sum(n)*100)
+  
+Climate_SSA_14C <- KG_p_africa_sum %>% 
+  arrange(desc(n_rel)) %>% 
+  tibble() %>% 
+  dplyr::select(-KG_p, -n) %>% 
+  left_join(AfSIS_14C_KG %>% 
+              count(KG_p_code, KG_p_name) %>% 
+              mutate(AfSIS_14C = TRUE)) %>% 
+  mutate(n_rel_afsis = n/sum(n, na.rm = TRUE)*100)
+
+write.csv(Climate_SSA_14C, row.names = FALSE,
+          "./Data/Climate_SSA_14C_sum.csv")
+
+### Extract MAT and MAP, PET
+# MAT
+MAT_dir <- "D:/Sophie/PhD/AfSIS_GlobalData/wc2.0_30s_bio/wc2.0_bio_30s_01.tif"
+MAT_raster <- raster(MAT_dir)
+MAT <- raster::extract(MAT_raster, cbind(AfSIS_LongLat$Longitude,
+                                         AfSIS_LongLat$Latitude))
+# MAP
+MAP_dir <- "D:/Sophie/PhD/AfSIS_GlobalData/wc2.0_30s_bio/wc2.0_bio_30s_12.tif"
+MAP_raster <- raster(MAP_dir)
+MAP <- raster::extract(MAP_raster, cbind(AfSIS_LongLat$Longitude,
+                                         AfSIS_LongLat$Latitude))
+
+# PET
+PET_dir <- "D:/Sophie/PhD/AfSIS_GlobalData/global-et0_annual.tif/et0_yr/et0_yr.tif"
+PET_raster <- raster(PET_dir) 
+PET <- raster::extract(PET_raster, cbind(AfSIS_LongLat$Longitude,
+                                         AfSIS_LongLat$Latitude))
+
+#Merge all three data sets
+AfSIS_14C_climate <- cbind(AfSIS_14C_KG, MAT, MAP, PET) %>% 
+  tibble()
+
+write.csv(AfSIS_14C_climate, row.names = FALSE,
           "./Data/AfSIS_LongLat_ClimateZones.csv")
+
+## WRB soil types
+#Jones A, Breuning-Madsen H, et al. (eds.), 2013, Soil Atlas of Africa. 
+#European Commission, Publications Office of the European Union, Luxembourg. 176 pp.
+sf_use_s2(FALSE)
+wrb_dir <- "D:/Sophie/PhD/AfSIS_GlobalData/Africa_soil_WRB/afticasoilmap.shp"
+
+# Extraction soil types (WRB) from shp file####
+wrb <- sf::st_read(wrb_dir)
+
+wrb_full <- wrb %>% 
+  rename(WRB_Code = SU_WRB1_PH) %>% 
+  dplyr::mutate(WRB_Type = case_when(
+    startsWith(WRB_Code, "AC") ~ "Acrisols",
+    startsWith(WRB_Code, "AL") ~ "Alisols",
+    startsWith(WRB_Code, "AN") ~ "Andosols",
+    startsWith(WRB_Code, "AR") ~ "Arenosols",
+    startsWith(WRB_Code, "CL") ~ "Calcisols",
+    startsWith(WRB_Code, "CM") ~ "Cambisols",
+    startsWith(WRB_Code, "CH") ~ "Chernozems",
+    startsWith(WRB_Code, "CR") ~ "Cryosols",
+    startsWith(WRB_Code, "DU") ~ "Durisols",
+    startsWith(WRB_Code, "FL") ~ "Fluvisols",
+    startsWith(WRB_Code, "FR") ~ "Ferralsols",
+    startsWith(WRB_Code, "GL") ~ "Gleysols", 
+    startsWith(WRB_Code, "HS") ~ "Histosols",
+    startsWith(WRB_Code, "KS") ~ "Kastanozems",
+    startsWith(WRB_Code, "LP") ~ "Leptosols",
+    startsWith(WRB_Code, "LX") ~ "Lixisols",
+    startsWith(WRB_Code, "LV") ~ "Luvisols",
+    startsWith(WRB_Code, "NT") ~ "Nitisols",
+    startsWith(WRB_Code, "PH") ~ "Phaeozems",
+    startsWith(WRB_Code, "PL") ~ "Planosols",
+    startsWith(WRB_Code, "PT") ~ "Plinthosols",
+    startsWith(WRB_Code, "PZ") ~ "Podzols",
+    startsWith(WRB_Code, "RG") ~ "Regosols",
+    startsWith(WRB_Code, "SC") ~ "Solonchaks",
+    startsWith(WRB_Code, "SN") ~ "Solonetz",
+    startsWith(WRB_Code, "ST") ~ "Stagnosols",
+    startsWith(WRB_Code, "TC") ~ "Technosols",
+    startsWith(WRB_Code, "UM") ~ "Umbrisols", 
+    startsWith(WRB_Code, "VR") ~ "Vertisols",
+    startsWith(WRB_Code, "GY") ~ "Gypsisols",
+    startsWith(WRB_Code, "WR") ~ "Water body"
+  ))
+
+# merging afsis data with wrb
+afsis_sf <- sf::st_as_sf(AfSIS_LongLat, coords = c("Longitude", "Latitude"), crs = 4326)
+
+afsis_wrb_sf <- sf::st_join(afsis_sf, wrb_full, left = TRUE)
+
+wrb_afsis <- st_set_geometry(afsis_wrb_sf, NULL)
+
+wrb_afsis %>% 
+  count(WRB_Type)
+
+#reduce area to ssa
+
+wrb_ssa <- wrb_full[ssa,]
+
+wrb_ssa_sum <- wrb_ssa %>% 
+  data.frame() %>% 
+  drop_na(WRB_Type) %>% 
+  count(WRB_Type)
+
+wrb_ssa_14c <- wrb_ssa_sum %>% 
+  filter(WRB_Type != "Water body") %>% 
+  mutate(n_rel = n/sum(n)*100) %>% 
+  dplyr::select(-n) %>% 
+  left_join(wrb_afsis %>% 
+              count(WRB_Type ) %>% 
+              mutate(AfSIS_14C = TRUE)) %>% 
+  mutate(n_rel_afsis = n/sum(n, na.rm = TRUE)*100) %>% 
+  arrange(desc(n_rel))
+write.csv(wrb_ssa_14c, row.names = FALSE,
+          "./Data/WRB_SSA_14C_sum.csv")
+

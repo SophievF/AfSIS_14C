@@ -41,7 +41,6 @@ Africa_sp <- Africa_map %>%
          name != "W. Sahara",
          name != "Tunisia",
          name != "Morocco",
-         name != "Somalia",
          name != "Djibouti",
          name != "Sudan") %>% 
   as("Spatial")
@@ -488,6 +487,26 @@ KG_p_area <- as.data.frame(KG_p_africa_grouped) %>%
     KG == 5 ~ "Tropical (humid)"
   )) %>% 
   group_by(KG_p_group) %>%
+  summarise(area = n()) %>%
+  mutate(area_all = sum(area),
+         rel_area = area / sum(area)) 
+
+recal <- c(0,2,5, 2,3,4, 3,7,1, 7,13,2, 13,16,3)
+recal_mat <- matrix(recal, ncol = 3, byrow = TRUE)
+
+KG_f_africa_grouped <- reclassify(KG_f_group_africa, recal_mat)
+
+KG_f_area <- as.data.frame(KG_f_africa_grouped) %>% 
+  rename(KG = Beck_KG_V1_future_0p0083) %>% 
+  filter(KG > 0) %>% 
+  mutate(KG_f_group = case_when(
+    KG == 1 ~ "Arid",
+    KG == 2 ~ "Temperate (seasonal)",
+    KG == 3 ~ "Temperate (humid)",
+    KG == 4 ~ "Tropical (seasonal)",
+    KG == 5 ~ "Tropical (humid)"
+  )) %>% 
+  group_by(KG_f_group) %>%
   summarise(area = n()) %>%
   mutate(area_all = sum(area),
          rel_area = area / sum(area)) 
