@@ -7,7 +7,7 @@ Date: June 2023 (Project start: Jan 2021)
 
 This repository contains all the code to reproduce the analysis and all figures in the publication von Fromm et al. (2023).
 
-Only the file AfSIS_data_all, and the R scripts Data_Mapping.R, Data_Analysis.R, DataRepresentative_Analysis.R are needed to reproduce the analysis and figures in the manuscript. All other files either contain raw data and/or are part of the data preparation and can be generated with the corresponding R scripts.
+Only the file AfSIS_data_all, and the R scripts Data_Mapping.R, Data_Analysis.R, DataRepresentative_Analysis.R, SpectralData_Analysis.R are needed to reproduce the analysis and figures in the manuscript. All other files either contain raw data and/or are part of the data preparation and can be generated with the corresponding R scripts.
 
 The folder Code contains all the R code, the folder Data contains all the data needed to run the R Scripts and the folder Figure contains all the figures that are produced with the R code.
 
