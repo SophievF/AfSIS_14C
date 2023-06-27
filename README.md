@@ -3,7 +3,7 @@ Radiocarbon analaysis of a subset of the AfSIS dataset
 
 Authors: Sophie von Fromm and Benjamin Butler
 
-Date: June 2023 (Project start: Jan 2021)
+Date: June 2023 
 
 This repository contains all the code to reproduce the analysis and all figures in the publication von Fromm et al. (2023).
 
@@ -27,6 +27,7 @@ Folder Data:
 
 Folder Code:
   - Data_Preparation.R: Script to merge all data files. Outpfile: AfSIS_data_all.csv
+  - DataRepresentative_Analysis.R. Script to perform the representative analysis of the different AfSIS datasets (see suplement in manuscript)
   - Data_Analysis.R: Script to reproduce analysis and figures
   - Data_Mapping.R: Script to reproduce all maps
   - Load14C_Data.R: Function to load raw 14C data
