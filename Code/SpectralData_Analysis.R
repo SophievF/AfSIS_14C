@@ -97,4 +97,4 @@ spc_df$dataset <- factor(spc_df$dataset,
  
 # all samples (un-processed)
 den_fun(spc_df)
-ggsave("./Figures/AfSIS_14C_FigureA2.jpeg", width = 10, height = 6)
+ggsave("./Figures/AfSIS_14C_FigureA3.jpeg", width = 10, height = 6)

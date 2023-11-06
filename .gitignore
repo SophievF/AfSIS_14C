@@ -56,3 +56,5 @@ Figures/pHMap_rdm.jpeg
 Figures/WRB_SSA_14C_sum.xlsx
 Investigate.html
 Figures/AfSIS_14C_FigureA5.jpeg
+Code/Data_Analysis_RandomForest_DeShorn.R
+*.log
