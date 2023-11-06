@@ -132,6 +132,12 @@ stopCluster(cl)
 save(mineral_fit, 
      file = "./Data/mineral_fit.Rdata")
 
+# Plot example spectra
+plot(mineral_fit$icr033408, "Cu", interactive = TRUE)
+
+mineral_fit$icr033408$phases
+mineral_fit$icr033408$phases_grouped
+
 #Summarize minerals and save data as csv file
 mineral_grouped <- summarise_mineralogy(mineral_fit, type = "grouped", 
                                         order = TRUE)
