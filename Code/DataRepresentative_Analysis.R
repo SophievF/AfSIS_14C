@@ -578,7 +578,6 @@ p_pH <- ggplot() +
   scale_fill_brewer(palette = "Paired") 
 
 ggarrange(p_gpp, p_MAP, p_MAT, p_pH)
-ggsave("./Figures/AfSIS_14C_FigureA2.jpeg", 
-       width = 12, height = 6)
+ggsave("./Figures/AfSIS_14C_FigureA2.jpeg", width = 12, height = 6)
 
              
