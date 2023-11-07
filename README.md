@@ -1,15 +1,17 @@
 # AfSIS_14C
-Radiocarbon analaysis of a subset of the AfSIS dataset
+Radiocarbon analaysis of a subset of the AfSIS dataset (related publications: von Fromm et al. (2021): https://soil.copernicus.org/articles/7/305/2021/ and Vagen et al. (2021): https://data.worldagroforestry.org/dataset.xhtml?persistentId=doi:10.34725/DVN/66BFOB
+
+Radiocarbon data will also be made publicily availabe via the Internation Soil Radiocarbon Database: https://github.com/International-Soil-Radiocarbon-Database/ISRaD
 
 Authors: Sophie von Fromm and Benjamin Butler
 
-Date: June 2023 
+Date: November 2023 
 
 This repository contains all the code to reproduce the analysis and all figures in the publication von Fromm et al. (2023).
 
 Only the file AfSIS_data_all, and the R scripts Data_Mapping.R, Data_Analysis.R, DataRepresentative_Analysis.R, SpectralData_Analysis.R are needed to reproduce the analysis and figures in the manuscript. All other files either contain raw data and/or are part of the data preparation and can be generated with the corresponding R scripts.
 
-The folder Code contains all the R code, the folder Data contains all the data needed to run the R Scripts and the folder Figure contains all the figures that are produced with the R code.
+The folder Code contains all the R code, the folder Data contains all the data needed to run the R Scripts and the folder Figure contains all the figures and tables that are produced with the R code.
 
 Folder Data:
   - AfSIS_data_all.csv: Merged data file with all data to reproduce analysis and figures. Output file from Data_Preparation.R
@@ -29,6 +31,8 @@ Folder Code:
   - Data_Preparation.R: Script to merge all data files. Outpfile: AfSIS_data_all.csv
   - DataRepresentative_Analysis.R. Script to perform the representative analysis of the different AfSIS datasets (see suplement in manuscript)
   - Data_Analysis.R: Script to reproduce analysis and figures
+  - Data_Analysis_LinearRegression.R: Script to reproduce linear mixed-effect models analysis (including related figures and tables)
+  - Data_AnaLysis_RandomForest.R: Script to reproduce random forest model anaylsis including partial dependence plots
   - Data_Mapping.R: Script to reproduce all maps
   - Load14C_Data.R: Function to load raw 14C data
   - MeanC_age.R: Script to calculate mean C age / turnover time. Output file: dd_14C_TT.csv
