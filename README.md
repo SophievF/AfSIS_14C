@@ -39,6 +39,6 @@ Folder Code:
   - Extract_Climate_Zones: Script to extract climate zones from global product for each sampling location. Output file: AfSIS_LongLat_ClimateZones.csv
 
 
-Rrelated publications: von Fromm et al. (2021): https://soil.copernicus.org/articles/7/305/2021/ and Vagen et al. (2021): https://data.worldagroforestry.org/dataset.xhtml?persistentId=doi:10.34725/DVN/66BFOB
+Related publications: von Fromm et al. (2021): https://soil.copernicus.org/articles/7/305/2021/ and Vagen et al. (2021): https://data.worldagroforestry.org/dataset.xhtml?persistentId=doi:10.34725/DVN/66BFOB
 
 Radiocarbon data will also be made publicily availabe via the Internation Soil Radiocarbon Database: https://github.com/International-Soil-Radiocarbon-Database/ISRaD
