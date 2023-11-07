@@ -1,7 +1,5 @@
 # AfSIS_14C
-Radiocarbon analaysis of a subset of the AfSIS dataset (related publications: von Fromm et al. (2021): https://soil.copernicus.org/articles/7/305/2021/ and Vagen et al. (2021): https://data.worldagroforestry.org/dataset.xhtml?persistentId=doi:10.34725/DVN/66BFOB
-
-Radiocarbon data will also be made publicily availabe via the Internation Soil Radiocarbon Database: https://github.com/International-Soil-Radiocarbon-Database/ISRaD
+Radiocarbon analaysis of a subset of the AfSIS dataset 
 
 Authors: Sophie von Fromm and Benjamin Butler
 
@@ -39,3 +37,8 @@ Folder Code:
   - XRPD_14C_MineralFitting.R: Script to quantify mineral content in each sample. Output file: AfSIS_Mineral_fits.csv
   - Gross_Primary_Productivity.R: Script to calculate gross primary productivity. Output file: AfSIS_GPP.csv
   - Extract_Climate_Zones: Script to extract climate zones from global product for each sampling location. Output file: AfSIS_LongLat_ClimateZones.csv
+
+
+Rrelated publications: von Fromm et al. (2021): https://soil.copernicus.org/articles/7/305/2021/ and Vagen et al. (2021): https://data.worldagroforestry.org/dataset.xhtml?persistentId=doi:10.34725/DVN/66BFOB
+
+Radiocarbon data will also be made publicily availabe via the Internation Soil Radiocarbon Database: https://github.com/International-Soil-Radiocarbon-Database/ISRaD
