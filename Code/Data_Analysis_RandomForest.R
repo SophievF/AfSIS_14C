@@ -84,6 +84,9 @@ AfSIS_14C$KG_p_group <- factor(AfSIS_14C$KG_p_group,
                                           "Tropical (seasonal)",
                                           "Temperate (humid)",
                                           "Tropical (humid)"))
+##Create color variables
+#Climate
+color_climate <- c("#ebebcb", "#c2a5cf", "#762a83", "#a6dba0", "#1b7837")
 
 #Create color scheme for empty climate zone
 color_climate_2 <- c("#ebebcb", "white", "#c2a5cf", "#762a83", "#a6dba0", 
@@ -405,7 +408,7 @@ Mox_p <- ggarrange(box_Mox_plot, ice_Mox_range_p,  nrow = 2,
 ice_minerals_p <- annotate_figure(
   ggarrange(Clay_8um_p, Clay_2_1_p, Clay_1_1_p, Mox_p, 
             legend.grob = legend_ice,
-            labels = c("a)", "b)", "c)", "d)")),
+            labels = c("(a)", "(b)", "(c)", "(d)")),
   left = text_grob("Predicted mean SOC age [yr]",
                    face = "bold", size = 19, rot = 90))
 
